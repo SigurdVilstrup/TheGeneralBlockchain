@@ -4,8 +4,29 @@ import hashlib
 import jsonpickle
 
 
+# Dataclass for the blockchain
 class Blockchain:
+    '''
+    A class that represenents a blockchain.
+    ...
+    Attributes:
+    ----------
+    blocks : Block[]
+        a list of all blocks in the blockchain
+    ...
+    Methods:
+    -------
+    deserializeBlock(string=None) -> Block
+        deserializes block from json string input
+    '''
+
     def __init__(self):
+        '''
+        Parameters:
+        ----------
+        self : self
+            Initializes blockchain with a genesis block.
+        '''
         self.blocks = [
             self.Block(timestamp=datetime.datetime.now(),
                        transactions=[self.Block.Body.Transaction(
@@ -14,7 +35,33 @@ class Blockchain:
         ]
 
     class Block:
+        '''
+        A class that represents a single block in a blockchain.
+
+        ...
+
+        Attributes:
+        ----------
+        body : Body
+            body of the block
+        header : Header
+            header of the block
+
+        ...
+        '''
+
         def __init__(self, timestamp, transactions, previousHash):
+            '''
+            Parameter:
+            ---------
+            timestamp : Timestamp
+                timestamp of the creation of the block
+            transactions : Transaction[]
+                list of the transactions contained in the block
+            previousHash : String
+                hash of the previous block in the blockchain
+
+            '''
             self.body = self.Body(transactions=transactions)
             self.header = self.Header(
                 version='0.1',
@@ -25,13 +72,47 @@ class Blockchain:
             )
 
         class Body(NamedTuple):
+            '''
+            Class that represents body of a block in the blockchain
+            ...
+            Attributes:
+            ----------
+            transactions : Transaction[]
+                list of transactions in body
+            '''
             transactions: List
 
             class Transaction(NamedTuple):
+                '''
+                Class that represents a transaction
+                ...
+                Attributes:
+                ----------
+                    epochTimestamp : Integer
+                        epoch timestamp of when the transaction took place
+                    data : String
+                        data in the form of a string - very loose definition since it's meant to be an educational blockchain
+                '''
                 epochTimestamp: int
                 data: str
 
         class Header(NamedTuple):
+            '''
+            Class that represents the header in a block of the blockchain
+            ...
+            Attributes:
+            ----------
+            bodySize : Integer
+                size of the serialized body - to make sure to receive all data when requesting it
+            timestampEpoch : Integer
+                timestamp of the block
+            merkleroot : String
+                merkleroot of all the transactions
+            version : String
+                version of the blockchain i.e.: v0.23
+            preHash : String
+                hash of the previous block in the blockchain
+            '''
             bodySize: int
             timestampEpoch: int
             merkleroot: str
@@ -39,6 +120,10 @@ class Blockchain:
             preHash: str
 
             def calcHash(self):
+                '''
+                Calculates hash of the current block in the blockchain.
+                returns hash as a string object of double lenght as per hashlib's hexdigest().
+                '''
                 h = hashlib.sha256()
 
                 h.update(str(self.bodySize).encode('utf-8'))
@@ -49,7 +134,7 @@ class Blockchain:
 
                 return h.hexdigest()
 
-        def _calcMerkleRoot(self, transactions):
+        def _calcMerkleRoot(self, transactions: List):
             print('Starting Merkle Root Calculation...')
 
             # List of all hashes
@@ -85,6 +170,9 @@ class Blockchain:
             return curHashes[0]
 
         def printHeader(self):
+            '''
+            prints header data for the block of self
+            '''
             print(
                 """Body size:      %s,
 Timestamp:      %s,
@@ -105,16 +193,30 @@ Hash:           %s
             )
 
         def printBody(self):
+            '''
+            prints body data for the block of self
+            '''
             for t in self.body.transactions:
                 print(t)
             print('\n')
 
         def printAll(self):
+            '''
+            prints all (header and body) data for the block of self
+            '''
             print("Header:")
             self.printHeader()
             print("Body:")
             self.printBody()
 
     def addBlock(self, timestamp, transactions):
+        '''
+        Adds block to the blockchain
+        ...
+        Parameters:
+        ----------
+        timestamp : Timestamp
+        transactions : Transaction[]
+        '''
         self.blocks.append(self.Block(timestamp=timestamp, transactions=transactions,
                                       previousHash=self.blocks[-1].header.calcHash()))
