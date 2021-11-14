@@ -1,6 +1,6 @@
 import datetime
 from LocalBlockchain import Blockchain
-from network import Network
+from sample.Network import Network
 
 
 def runMenu(blockchain):
