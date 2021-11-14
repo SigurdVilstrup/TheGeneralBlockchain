@@ -89,21 +89,7 @@ class txThread:
                 data.outb = data.outb[sent:]
 
 
-class rxThread:
-    def __init__(self, port):
-        self.selector = selectors.DefaultSelector()
-        self.rxPort = port
 
-        self.rxSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.rxSocket.bind(
-        #     (socket.gethostbyname(socket.gethostname()), self.rxPort))
-        self.rxSocket.bind(('', self.rxPort))
-        self.rxSocket.listen()
-        # self.rxSocket.setblocking(False)
-
-        conn, addr = self.rxSocket.accept()
-        with conn:
-            print('Connected by: ', addr)
 
 
 if __name__ == '__main__':

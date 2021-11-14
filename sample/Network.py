@@ -1,8 +1,7 @@
 import threading
 from typing import List
-from TCP import txThread
-from TCP import rxThread
 from sample.LocalBlockchain import Blockchain
+from sample.rxServer import rxServer
 
 
 class Network:
@@ -47,7 +46,7 @@ class Network:
 
         # Starts new thread that continuesly is able to receive updates to the blockchain
         self.rxThread = threading.Thread(
-            target=rxThread, args=(self.port))
+            target=rxServer, args=(self.port))
 
     def addNode():
         pass
