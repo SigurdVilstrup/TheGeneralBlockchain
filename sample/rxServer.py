@@ -43,10 +43,18 @@ class rxServer:
         _socket.send(message)
         key.data.rxb = b''
 
-    def _createHeader(self, headerIn):
+    def _createPreHeader(self, headerIn, type):
         if isinstance(headerIn, int):
             header = copy(str(headerIn).encode('utf-8'))
-            header = b'HEAD' + header
+            match type:
+                case 'HEAD':
+                    header = b'HEAD' + header
+                case 'CMND':
+                    header = b'CMND' + header
+                case _:
+                    raise ValueError(
+                        'type not supported: use HEAD or CMND, tried:', type)
+
             while len(header) != 16:
                 header = header + b' '
             print('Header set to 16 byte array, ', header)
@@ -57,7 +65,7 @@ class rxServer:
 
     def _sendResponse(self, socket, response):
         # Send header first - always 16 bit array
-        self._send(socket, self._createHeader(len(response)))
+        self._send(socket, self._createPreHeader(len(response)))
 
         # Send body after
         self._send(socket, response)
@@ -109,7 +117,13 @@ class rxServer:
                 print('her')
             case b'TGB:update':
                 print('Responding with: header data')
-                self._send(key, self._createHeader(32))
+                self._send(key, self._createPreHeader(len(
+                    b"Updated blockchain data as a Json String type...."), type='CMND'))
+
+            case b'TGB:update:nxt':
+                print('Responding with: header data')
+                self._send(
+                    key, b"Updated blockchain data as a Json String type....")  # TODO this needs to be dynamic so that the JSON strings are sent when asked for
 
             case _:
                 if key.data.rxb:

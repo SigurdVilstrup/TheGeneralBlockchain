@@ -34,6 +34,9 @@ class Blockchain:
                        previousHash='00000000000000')
         ]
 
+    def createBlock(self, header, body):
+        return self.Block(timestamp=header.timestamp, transactions=body.transactions)
+
     class Block:
         '''
         A class that represents a single block in a blockchain.

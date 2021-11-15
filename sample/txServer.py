@@ -1,6 +1,9 @@
+from copy import copy
 import selectors
 import socket
 from types import SimpleNamespace
+
+from LocalBlockchain import Blockchain
 
 
 class txServer:
@@ -24,7 +27,7 @@ class txServer:
 
         self.selector = selectors.DefaultSelector()
 
-    def sendMsg(self, host, msg):
+    def sendMsg(self, host, msg, msgLen, preheader):
         '''
         sends message (serialized block) to rest of blockchain
         ...
@@ -48,10 +51,31 @@ class txServer:
             events = self.selector.select(timeout=1)
             if events:
                 for key, mask in events:
-                    value = self._handleTxRx(key=key, mask=mask)
+                    # Get value
+                    value = self._handleTxRx(key=key, mask=mask, rxLen=msgLen)
+
             if not self.selector.get_map():
-                print('value received: ', value)
-                break
+                if preheader:
+                    _type, _len = self._getLenFromPreHeader(value)
+                    print('type found:', _type, 'Next len:', _len)
+                    return _type, _len
+                else:
+                    return value
+
+    def _getLenFromPreHeader(self, value):
+        '''
+        get length of either Header or body from preheader
+        return (type:str, len:int)
+        type can be: 'HEAD' or 'CMND'
+        '''
+        print(value)
+        returnValue = copy(value[4:])
+        type = copy(value[0:4])
+
+        while returnValue[-1] == 32:
+            returnValue = returnValue[0:-1]
+
+        return (type.decode(), int(returnValue))
 
     def _startConnection(self, host, data):
         '''
@@ -71,7 +95,7 @@ class txServer:
                                data=data)
         print('Connection to %s has been started' % (host))
 
-    def _handleTxRx(self, key, mask):
+    def _handleTxRx(self, key, mask, rxLen):
         _socket = key.fileobj
         data = key.data
 
@@ -79,7 +103,7 @@ class txServer:
             rxData = _socket.recv(1024)
             if rxData:
                 data.recv_total += len(rxData)
-            if data.recv_total == 16:
+            if data.recv_total == rxLen:
                 print('Received: %s, closing connection to Node' % rxData)
                 self.selector.unregister(_socket)
                 _socket.close()
@@ -94,8 +118,17 @@ class txServer:
                 sent = _socket.send(data.outb)
                 data.outb = data.outb[sent:]
 
+    def getUpdate(self, host):
+        # Get preheader
+        _type, _len = self.sendMsg(host, 'TGB:update', 16, True)
+
+        if _type == 'CMND':
+            update = self.sendMsg(host, 'TGB:update:nxt', _len, False)
+
+        print(update.decode())
+
 
 if __name__ == '__main__':
     # For testing
     test = txServer(nodeList=['192.168.50.37', '0.0.0.0'])
-    test.sendMsg('192.168.50.37', 'TGB:update')
+    test.getUpdate(host='192.168.50.37')
