@@ -3,6 +3,8 @@ import socket
 from types import SimpleNamespace
 from copy import copy
 
+import jsonpickle
+
 
 class rxServer:
     '''
@@ -43,12 +45,12 @@ class rxServer:
         _socket.send(message)
         key.data.rxb = b''
 
-    def _createPreHeader(self, headerIn, type):
-        if isinstance(headerIn, int):
-            header = copy(str(headerIn).encode('utf-8'))
+    def _createPreHeader(self, length: int, type):
+        if isinstance(length, int):
+            header = copy(str(length).encode('utf-8'))
             match type:
-                case 'HEAD':
-                    header = b'HEAD' + header
+                case 'DATA':
+                    header = b'DATA' + header
                 case 'CMND':
                     header = b'CMND' + header
                 case _:
@@ -61,7 +63,7 @@ class rxServer:
             return header
         else:
             raise ValueError(
-                "createHeader error - not type int", type(headerIn))
+                "createHeader error - not type int", type(length))
 
     def _sendResponse(self, socket, response):
         # Send header first - always 16 bit array
@@ -102,7 +104,10 @@ class rxServer:
     def _respondRequest(self, key):
         _socket = key.fileobj  # TODO REMOVE
 
-        _request = copy(key.data.rxb)
+        _request = copy(key.data.rxb[0:16].rstrip())
+        _data = copy(key.data.rxb[16:])
+
+        print("Received request: %s, with data %s" % (_request, _data))
 
         # TODO create software responses
         # * request(hash) -> Block(hash)
@@ -113,17 +118,49 @@ class rxServer:
             case b'1':
                 print('quit')
                 quit()  # TODO Remove
-            case b'2':
-                print('her')
-            case b'TGB:update':
-                print('Responding with: header data')
-                self._send(key, self._createPreHeader(len(
-                    b"Updated blockchain data as a Json String type...."), type='CMND'))
+            case b'TGB:newTrans:':
+                print('Received transactions: %s' %
+                      (jsonpickle.decode(_data.decode())))
+                self._send(key, self._createPreHeader(length=200, type='CMND'))
+                pass
+            case b'TGB:PoW:':
+                print('Recevied block: %s' %
+                      (jsonpickle.decode(_data.decode())))
 
-            case b'TGB:update:nxt':
-                print('Responding with: header data')
-                self._send(
-                    key, b"Updated blockchain data as a Json String type....")  # TODO this needs to be dynamic so that the JSON strings are sent when asked for
+                # If block header nonce is correct
+                # TODO dynamically check whether it is correct
+                if True:
+                    self._send(key, self._createPreHeader(
+                        length=200, type='CMND'))
+
+                # Else return error message
+                else:
+                    self._send(key, self._createPreHeader(
+                        length=404, type='CMND'))
+                pass
+            case b'TGB:getNodes:':
+                if _data == b'':
+                    self._send(key, self._createPreHeader(
+                        length=len(b'List of all the nodes in this node!'), type='DATA'))
+                if _data == b'getData':
+                    self._send(key, b'List of all the nodes in this node!')
+            case b'TGB:update:':
+                if _data == b'newestHash':
+                    print('Responding with: header data')
+                    self._send(key, self._createPreHeader(
+                        length=200, type='CMND'))
+
+                elif _data == b'blockchainData':
+                    print('Responding with: header data')
+                    # TODO this needs to be dynamic so that the JSON strings are sent when asked for
+                    self._send(
+                        key, b"Updated blockchain data as a Json String type....")
+                    pass
+
+                else:
+                    print('Responding with data to update blockchain.')
+                    self._send(key, self._createPreHeader(
+                        len(b'Updated blockchain data as a Json String type....'), type='DATA'))
 
             case _:
                 if key.data.rxb:

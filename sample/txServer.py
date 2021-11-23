@@ -2,8 +2,11 @@ from copy import copy
 import selectors
 import socket
 from types import SimpleNamespace
+from typing import List
 
+import jsonpickle
 from LocalBlockchain import Blockchain
+import datetime
 
 
 class txServer:
@@ -27,7 +30,7 @@ class txServer:
 
         self.selector = selectors.DefaultSelector()
 
-    def sendMsg(self, host, msg, msgLen, preheader):
+    def sendMsg(self, host, msg, msgLen, preheader=False):
         '''
         sends message (serialized block) to rest of blockchain
         ...
@@ -57,7 +60,6 @@ class txServer:
             if not self.selector.get_map():
                 if preheader:
                     _type, _len = self._getLenFromPreHeader(value)
-                    print('type found:', _type, 'Next len:', _len)
                     return _type, _len
                 else:
                     return value
@@ -118,17 +120,104 @@ class txServer:
                 sent = _socket.send(data.outb)
                 data.outb = data.outb[sent:]
 
-    def getUpdate(self, host):
-        # Get preheader
-        _type, _len = self.sendMsg(host, 'TGB:update', 16, True)
+    def forceUpdate(self):
+        for node in self.nodeList:
+            # TODO - newestHash should dynamically be the newest hash in the local blockchain
+            _type, _len = self.sendMsg(
+                node, 'TGB:update:'.ljust(16)+'aLaterHash', 16, True)
+            print('type found:', _type, 'Next len:', _len)
 
-        if _type == 'CMND':
-            update = self.sendMsg(host, 'TGB:update:nxt', _len, False)
+            if _type == 'CMND' and _len == 200:
+                print("Blockchain is up to date")
+                return
 
-        print(update.decode())
+            if _type == 'DATA':
+                print("Getting blockchain from updated node")
+                _value = self.sendMsg(
+                    node, 'TGB:update:'.ljust(16)+'blockchainData', _len)
+
+                # _value that is received is the blockchain as a Json String
+                print(_value)
+                pass
+        pass
+
+    def getBlockchain(self, blockchainReference: Blockchain):
+        # TODO integrate later - how is it different to forceUpdate? Maybe only meant to be called when initialized? To skip update request.
+        pass
+
+    def getNodes(self, blockchainReference: Blockchain):
+        # TODO request all nodes from node(s)
+        for node in self.nodeList:
+            _type, _len = self.sendMsg(
+                node, 'TGB:getNodes:'.ljust(16), 16, True)
+            print('type found:', _type, 'Next len:', _len)
+            if _type == 'DATA':
+                _value = self.sendMsg(
+                    node, 'TGB:getNodes:'.ljust(16)+'getData', _len)
+                print(_value)
+                # _value received is the list of nodes as a Json string
+                pass
+        pass
+
+    def broadcastNewTransactions(self, transactions: List[Blockchain.Block.Body.Transaction]):
+        # TODO broadcast a new transaction to the whole network
+        for node in self.nodeList:
+            _type, _len = self.sendMsg(
+                node, 'TGB:newTrans:'.ljust(16)+jsonpickle.encode(transactions), 16, True)
+            print('type found:', _type, 'Next len:', _len)
+            if _type == 'CMND' and _len == 200:
+                print('node:', node, 'has received new transaction')
+                return
+            pass
+        pass
+
+    def broadcastPoW(self, block: Blockchain.Block):
+        # TODO broadcast Proof of Work to network after receival of the new transaction(s)
+        for node in self.nodeList:
+            _type, _len = self.sendMsg(
+                node, 'TGB:PoW:'.ljust(16)+jsonpickle.encode(block), 16, True)
+
+            if _type == 'CMND' and _len == 200:
+                print('node:', node, 'has accepted proof of work')
+                return
+
+            if _type == 'CMND' and _len == 404:
+                print('node:', node, 'has denied proof of work')
+                return
+        pass
 
 
 if __name__ == '__main__':
     # For testing
-    test = txServer(nodeList=['192.168.50.37', '0.0.0.0'])
-    test.getUpdate(host='192.168.50.37')
+    testTransactions = [Blockchain.Block.Body.Transaction(epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
+                        Blockchain.Block.Body.Transaction(
+        epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
+        Blockchain.Block.Body.Transaction(
+        epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
+        Blockchain.Block.Body.Transaction(epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa')]
+
+    testBlock = Blockchain.Block(
+        timestamp=datetime.datetime.now(),
+        transactions=[Blockchain.Block.Body.Transaction(
+            epochTimestamp=datetime.datetime.now().timestamp(), data='data')],
+        previousHash="")
+
+    testBC = Blockchain()
+
+    test = txServer(nodeList=['192.168.50.37'])
+
+    print('\n\n\nStarting tests!...........................................................................')
+
+    print("\n\nTesting forceUpdate().....................................................................\n")
+    test.forceUpdate()
+
+    print("\n\nTesting getNodes()........................................................................\n")
+    test.getNodes(testBC)
+
+    print("\n\nTesting broadcastNewTransaction().........................................................\n")
+    test.broadcastNewTransactions(testTransactions)
+
+    print("\n\nTesting broadcastPoW()....................................................................\n")
+    test.broadcastPoW(testBlock)
+
+    print('\n\n\nAll tests successfully caried out!......................................................\n')
