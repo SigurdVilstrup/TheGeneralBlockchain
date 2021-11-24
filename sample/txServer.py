@@ -188,13 +188,16 @@ class txServer:
 
 
 if __name__ == '__main__':
-    # For testing
-    testTransactions = [Blockchain.Block.Body.Transaction(epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
-                        Blockchain.Block.Body.Transaction(
+    # For testing purely the connections - no actual data is transferred between nodes.
+
+    testTransactions = [Blockchain.Block.Body.Transaction(
         epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
         Blockchain.Block.Body.Transaction(
         epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
-        Blockchain.Block.Body.Transaction(epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa')]
+        Blockchain.Block.Body.Transaction(
+        epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
+        Blockchain.Block.Body.Transaction(
+        epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa')]
 
     testBlock = Blockchain.Block(
         timestamp=datetime.datetime.now(),
