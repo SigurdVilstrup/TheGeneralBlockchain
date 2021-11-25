@@ -1,5 +1,6 @@
 from ctypes import alignment
 import hashlib
+from os import name
 import tkinter as tk
 
 
@@ -19,7 +20,7 @@ class tgbGUI:
 
         pass
 
-    def _buildNode(self, canvas, center, height, width, text):
+    def _buildNode(self, canvas, center, height, width, index, ip, name=''):
         h = height/2
         w = width/2
 
@@ -36,14 +37,34 @@ class tgbGUI:
         )
         canvas.tag_raise(tempRect)
 
+        if name == '':
+            name = 'Node %s' % index
+
+        text = '%s\n\n%s' % (name, ip)
+
         tempText = canvas.create_text(
             cX,
             cY,
             text=text,
             justify='center',
-            font='Roboto 8'
+            font='Roboto 8',
+            anchor='s'
         )
         canvas.tag_raise(tempText)
+
+        btn_temp = tk.Button(
+            master=self.frm_nodeRep,
+            text='Open Node',
+            command=lambda: print('Your pressed node %s' % index),
+            background='white',
+        )
+
+        tempBtn = canvas.create_window(
+            (cX, cY+h-3),
+            window=btn_temp,
+            anchor='s'
+        )
+        canvas.tag_raise(tempBtn)
 
     def _buildRemoteNode(self, canvas, index, hostaddress, height, width, global_center):
         start = global_center
@@ -111,7 +132,8 @@ class tgbGUI:
             end,
             height=height,
             width=width,
-            text='Index: %s\n\n%s\nremote node' % (index, hostaddress))
+            index=index,
+            ip=hostaddress)
 
         pass
 
@@ -121,7 +143,7 @@ class tgbGUI:
         ratioh = height/5
 
         # Build 5 remote nodes for show
-        for index in range(0, 16):
+        for index in range(0, 10):
             self._buildRemoteNode(
                 canvas=canvas,
                 index=index+1,
@@ -136,7 +158,9 @@ class tgbGUI:
             center=center,
             height=ratioh,
             width=ratioh*0.75,
-            text='Index: 0\n\nlocalhost\nlocal node')
+            index=0,
+            ip='localhost',
+            name='This PC')
 
     def _createBlocks(self, frame, test: bool):
         if test:
@@ -172,7 +196,8 @@ class tgbGUI:
             master=self.root, relief="flat", background='white')
 
         # Creating logo on the left
-        self.frm_logo = tk.Frame(master=self.frm_tgb, background='white')
+        self.frm_logo = tk.Frame(
+            master=self.frm_tgb, background='white')
         self.img_logo = tk.PhotoImage(file='Graphics/icon.drawio.png')
         tk.Label(
             master=self.frm_logo,
@@ -190,7 +215,8 @@ class tgbGUI:
             background='white').grid(column=1, row=1)
 
         # Creating buttons on the right
-        self.frm_buttons = tk.Frame(master=self.frm_tgb, background='white')
+        self.frm_buttons = tk.Frame(
+            master=self.frm_tgb, background='white')
 
         self.btn_forceUpdate = tk.Button(
             master=self.frm_buttons,
@@ -208,17 +234,46 @@ class tgbGUI:
             font='Roboto 10',
             background='white',).grid(row=3, column=1, pady=5, padx=5, sticky='e')
 
-        self.frm_buttons.pack(side='right')
-        self.frm_logo.pack(side='left')
+        self.frm_tgb.columnconfigure(1, weight=2)
+        self.frm_tgb.columnconfigure(2, weight=2)
+        self.frm_tgb.columnconfigure(3, weight=3)
+
+        self.frm_buttons.grid(row=0, column=3, sticky='e')
+
+        self.frm_search = tk.Frame(master=self.frm_tgb, background='white')
+        self._searchbar(frame=self.frm_search)
+        self.frm_search.grid(row=0, column=2, sticky='s')
+
+        self.frm_logo.grid(row=0, column=1, sticky='w')
 
         self.frm_tgb.pack(fill="x", padx=10, pady=10, expand=True, side='top')
 
-    # Blockchain representation frame ################################################
+    def _searchbar(self, frame):
 
+        self.lbl_search = tk.Label(
+            master=frame,
+            text='Search in all transactions and blocks using regex:',
+            anchor='e',
+            background='white').pack(padx=5, pady=5)
+
+        self.frm_searchbar = tk.Frame(master=frame, background='white')
+
+        self.btn_search = tk.Button(
+            master=self.frm_searchbar,
+            background='white',
+            text='Search', ).grid(row=0, column=1)
+        self.ent_search = tk.Entry(
+            master=self.frm_searchbar,
+            width=40,
+            background='white').grid(row=0, column=0, padx=5)
+
+        self.frm_searchbar.pack()
+
+    # Blockchain representation frame ################################################
     def _blockRepresentation(self):
         self.pixelVirtual = tk.PhotoImage(width=1, height=1)
 
-        self.frm_bcRep = tk.Frame(master=self.root, relief=tk.SUNKEN,
+        self.frm_bcRep = tk.Frame(master=self.root, relief='sunken',
                                   borderwidth=2, background='white')
 
         self.cvs_blocks = tk.Canvas(master=self.frm_bcRep,
