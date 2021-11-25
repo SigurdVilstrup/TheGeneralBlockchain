@@ -24,7 +24,7 @@ The blockchain is python based, and should be easily understood and very accesib
 
 ### Graphic
 
-- Tkinter to create graphic user interface
+- ~~Tkinter to create graphic user interface~~ ✔
   - ~~Main window~~ ✔
   - ~~TGB canvas~~ ✔
   - ~~Block overview~~ ✔
