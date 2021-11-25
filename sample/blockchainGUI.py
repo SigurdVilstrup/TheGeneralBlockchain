@@ -2,6 +2,7 @@ from ctypes import alignment
 import hashlib
 from os import name
 import tkinter as tk
+from tkinter import font
 
 
 # Master frame ################################################
@@ -16,11 +17,170 @@ class tgbGUI:
 
         self._tgbHeader()
         self._blockRepresentation()
-        self._nodeRepresentation()
+        self._nodeRepresentation(master=self.root, dimensions=(1200, 550))
 
         pass
 
-    def _buildNode(self, canvas, center, height, width, index, ip, name=''):
+    def _openNodeWindow(self, index):
+        self.nodeWindow = tk.Toplevel(self.root)
+        self.nodeWindow.title('Node %s Information' % index)
+        self.nodeWindow.iconphoto(False, tk.PhotoImage(
+            file='Graphics/icon.drawio.png'))
+        self.nodeWindow.geometry('825x520')
+        self.nodeWindow.configure(background='white')
+
+        # Get info: IP, Network, Name, Index
+
+        # Display info with ability to change name
+        frm_info = tk.Frame(master=self.nodeWindow, background='white')
+
+        tk.Label(
+            master=frm_info,
+            text="ip:\t",
+            anchor='w',
+            background='white').grid(column=0, row=0, sticky='w', padx=5, pady=5)
+        lbl_ip = tk.Label(
+            master=frm_info,
+            text="106.213.213",
+            justify='left',
+            anchor='w',
+            background='white').grid(column=1, row=0, sticky='w', padx=5, pady=5)
+        tk.Label(
+            master=frm_info,
+            text="name:\t",
+            anchor='w',
+            background='white').grid(column=0, row=1, padx=5, pady=5)
+        lbl_name = tk.Label(
+            master=frm_info,
+            text="Node name",
+            justify='left',
+            anchor='w',
+            background='white').grid(column=1, row=1, padx=5, pady=5)
+        ent_name = tk.Entry(master=frm_info).grid(
+            column=2, row=1, padx=5, pady=5)
+        btn_save = tk.Button(master=frm_info,
+                             text='Save new name').grid(column=3, row=1, padx=5, pady=5)
+
+        frm_info.columnconfigure(5, weight=2)
+
+        tk.Button(
+            master=frm_info,
+            text='OK / CLOSE',
+            command=lambda: self.nodeWindow.destroy()).grid(column=5, row=0, pady=10, padx=10, sticky='e')
+
+        frm_info.pack(pady=10, padx=10, expand=True, fill='x')
+
+        # Display Network
+        self._nodeRepresentation(
+            master=self.nodeWindow, dimensions=(800, 400,), buttons=False, homeNodeIndex=index)
+
+    def _openBlockWindow(self, index):
+        self.blockwindow = tk.Toplevel(self.root)
+        self.blockwindow.title('Block %s Information' % index)
+        self.blockwindow.iconphoto(False, tk.PhotoImage(
+            file='Graphics/icon.drawio.png'))
+        self.blockwindow.geometry('300x600')
+        self.blockwindow.configure(background='white')
+
+        # Frame for top information
+        frm_info = tk.Frame(master=self.blockwindow, background='white')
+
+        tk.Label(master=frm_info, text='Block:             ',
+                 justify='left', background='white').grid(
+            column=0, row=0, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='Hash:              ',
+                 justify='left', background='white').grid(
+            column=0, row=1, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='Merkleroot:        ',
+                 justify='left', background='white').grid(
+            column=0, row=2, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='Blockchain version:',
+                 justify='left', background='white').grid(
+            column=0, row=3, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='Difficulty:        ',
+                 justify='left', background='white').grid(
+            column=0, row=4, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='Nonce:             ',
+                 justify='left', background='white').grid(
+            column=0, row=5, pady=1, padx=5, sticky='nw')
+
+        tk.Label(master=frm_info, text=index,
+                 justify='left', background='white').grid(
+            column=1, row=0, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='',
+                 justify='left', background='white').grid(
+            column=1, row=1, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='',
+                 justify='left', background='white').grid(
+            column=1, row=2, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='',
+                 justify='left', background='white').grid(
+            column=1, row=3, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='',
+                 justify='left', background='white').grid(
+            column=1, row=4, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='',
+                 justify='left', background='white').grid(
+            column=1, row=5, pady=1, padx=5, sticky='nw')
+
+        # Frame for transactions
+        frm_trans = tk.Frame(master=self.blockwindow,
+                             background='white', relief='sunken')
+
+        tk.Label(master=frm_trans, text='All transactions in block:', font='roboto 12 bold', background='white').grid(
+            column=1, row=1, pady=5, padx=5)
+
+        frm_list = tk.Frame(master=frm_trans, background='white')
+        scb_vert = tk.Scrollbar(master=frm_list)
+        scb_vert.pack(side='right', fill='y')
+
+        lsb_trans = tk.Listbox(
+            master=frm_list,
+            height=20,
+            yscrollcommand=scb_vert.set,
+            width=40)
+
+        for line in range(0, 100):
+            lsb_trans.insert('end', 'transaction no: %s' % line)
+
+        lsb_trans.pack(fill='both', padx=3, pady=3, side='bottom')
+        scb_vert.config(command=lsb_trans.yview)
+
+        frm_list.grid(
+            column=1, row=2, pady=5, padx=5, sticky='w')
+
+        frm_info.pack(padx=10, pady=10, expand=True,
+                      fill='x', side='top', anchor='nw')
+
+        frm_trans.pack(padx=10, pady=10, expand=True,
+                       fill='both', side='bottom', anchor='sw')
+
+    def _openSearchResults(self, entry):
+        searchString = entry.get()
+        entry.delete(0, len(searchString))
+
+        self.searchWindow = tk.Toplevel(self.root)
+        self.searchWindow.title(
+            'Search results in blockchain for \'%s\'' % searchString)
+        self.searchWindow.iconphoto(False, tk.PhotoImage(
+            file='Graphics/icon.drawio.png'))
+        self.searchWindow.geometry('600x300')
+        self.searchWindow.configure(background='white')
+
+        # How many blocks was found containing SearchString at leas once.
+        noOfBlocks = 10
+
+        tk.Label(master=self.searchWindow,
+                 text='%s was found in %s blocks, listed below:' % (
+                     searchString, noOfBlocks),
+                 font='Roboto 12',
+                 background='white',
+                 justify='left').pack(side='top', anchor='nw', pady=5, padx=5)
+
+        # TODO show way of showing results of searchString
+        # Note: probably for all blocks (re.search(searchString) - if not null, string is present in block, return list of blocks and show their hash and index)
+
+    def _buildNode(self, canvas, center, height, width, index, ip, name='', buttons=True):
         h = height/2
         w = width/2
 
@@ -52,25 +212,26 @@ class tgbGUI:
         )
         canvas.tag_raise(tempText)
 
-        btn_temp = tk.Button(
-            master=self.frm_nodeRep,
-            text='Open Node',
-            command=lambda: print('Your pressed node %s' % index),
-            background='white',
-        )
+        if buttons:
+            btn_temp = tk.Button(
+                master=self.frm_nodeRep,
+                text='Open Node',
+                command=lambda i=index: self._openNodeWindow(i),
+                background='white',
+            )
 
-        tempBtn = canvas.create_window(
-            (cX, cY+h-3),
-            window=btn_temp,
-            anchor='s'
-        )
-        canvas.tag_raise(tempBtn)
+            tempBtn = canvas.create_window(
+                (cX, cY+h-3),
+                window=btn_temp,
+                anchor='s'
+            )
+            canvas.tag_raise(tempBtn)
 
-    def _buildRemoteNode(self, canvas, index, hostaddress, height, width, global_center):
+    def _buildRemoteNode(self, canvas, index, buildpos, hostaddress, height, width, global_center, buttons):
         start = global_center
 
         # End is calculated as the middle of the remote node being build
-        match index:
+        match buildpos:
             case 1:
                 end = (global_center[0], global_center[1]-(height*1.5))
             case 2:
@@ -127,30 +288,43 @@ class tgbGUI:
             width=1)
         canvas.tag_lower(temp_line)
 
+        # Width halfhazerdly adjusted to be a bit more....
         self._buildNode(
             canvas,
             end,
             height=height,
-            width=width,
+            width=width*1.2,
             index=index,
-            ip=hostaddress)
+            ip=hostaddress,
+            buttons=buttons)
 
-        pass
-
-    def _buildNodesWithConnections(self, canvas, height, width):
+    def _buildNodesWithConnections(self, canvas, height, width, buttons, centerNode):
         center = (width/2, height/2)
 
         ratioh = height/5
 
         # Build 5 remote nodes for show
-        for index in range(0, 10):
-            self._buildRemoteNode(
-                canvas=canvas,
-                index=index+1,
-                hostaddress='192.%s.0.%s' % (index*51.5, index),
-                height=ratioh,
-                width=ratioh*0.75,
-                global_center=center)
+        for index in range(1, 10):
+            if index is not centerNode:
+                self._buildRemoteNode(
+                    canvas=canvas,
+                    index=index,
+                    buildpos=index,
+                    hostaddress='192.%s.0.%s' % (index*51.5, index),
+                    height=ratioh,
+                    width=ratioh*0.75,
+                    global_center=center,
+                    buttons=buttons)
+            if index is centerNode:
+                self._buildRemoteNode(
+                    canvas=canvas,
+                    index=0,
+                    buildpos=index,
+                    hostaddress='localhost',
+                    height=ratioh,
+                    width=ratioh*0.75,
+                    global_center=center,
+                    buttons=buttons)
 
         # Building center node (localnode)
         self._buildNode(
@@ -158,9 +332,10 @@ class tgbGUI:
             center=center,
             height=ratioh,
             width=ratioh*0.75,
-            index=0,
-            ip='localhost',
-            name='This PC')
+            index=index,
+            ip='localhost' if 0 else '192.%s.0.%s' % (index*51.5, index),
+            name='Node %s' % centerNode,
+            buttons=buttons)
 
     def _createBlocks(self, frame, test: bool):
         if test:
@@ -181,7 +356,8 @@ class tgbGUI:
                     height=125,
                     background='white',
                     compound='c',
-                    font='Roboto 9').pack(anchor='center')
+                    font='Roboto 9',
+                    command=lambda index=c: self._openBlockWindow(index=index)).pack(anchor='center')
                 frm_Temp.grid(row=0, column=c, pady=10, padx=10)
         else:
             # TODO implement dynamically gettings the blocks from the local blockchain
@@ -258,14 +434,16 @@ class tgbGUI:
 
         self.frm_searchbar = tk.Frame(master=frame, background='white')
 
-        self.btn_search = tk.Button(
-            master=self.frm_searchbar,
-            background='white',
-            text='Search', ).grid(row=0, column=1)
-        self.ent_search = tk.Entry(
+        ent_search = tk.Entry(
             master=self.frm_searchbar,
             width=40,
-            background='white').grid(row=0, column=0, padx=5)
+            background='white')
+        ent_search.grid(row=0, column=0, padx=5)
+        tk.Button(
+            master=self.frm_searchbar,
+            background='white',
+            text='Search',
+            command=lambda entry=ent_search: self._openSearchResults(entry=entry)).grid(row=0, column=1)
 
         self.frm_searchbar.pack()
 
@@ -298,23 +476,27 @@ class tgbGUI:
 
     # Master frame
 
-    def _nodeRepresentation(self):
-        self.frm_nodeRep = tk.Frame(master=self.root,
+    def _nodeRepresentation(self, master, dimensions, buttons: bool = True, homeNodeIndex=0):
+        w, h = dimensions
+
+        self.frm_nodeRep = tk.Frame(master=master,
                                     relief='sunken',
                                     borderwidth=2,
                                     background='white')
 
         self.cvs_nodeRep = tk.Canvas(master=self.frm_nodeRep,
-                                     height=550,
-                                     width=1200,
+                                     height=h,
+                                     width=w,
                                      background='white')
 
         self.cvs_nodeRep.pack()
 
         self._buildNodesWithConnections(
             self.cvs_nodeRep,
-            550,
-            1200)
+            h,
+            w,
+            buttons,
+            centerNode=homeNodeIndex)
 
         self.frm_nodeRep.pack(fill='both',
                               padx=10, pady=10, expand=True, side='bottom')
