@@ -28,7 +28,7 @@ The blockchain is python based, and should be easily understood and very accesib
   - ~~Main window~~ ✔
   - ~~TGB canvas~~ ✔
   - ~~Block overview~~ ✔
-  - Nodes overview
+  - ~~Nodes overview~~ ✔
 - Interfacing with:
   - other elements user interaction, i.e.: buttons etc.
   - local blockchain - i.e.: showing state of the blockchain
