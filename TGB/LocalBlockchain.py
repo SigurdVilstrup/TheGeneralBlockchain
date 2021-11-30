@@ -20,7 +20,7 @@ class Blockchain:
         deserializes block from json string input
     '''
 
-    def __init__(self):
+    def __init__(self, nodeList):
         '''
         Parameters:
         ----------
@@ -28,11 +28,15 @@ class Blockchain:
             Initializes blockchain with a genesis block.
         '''
         self.blocks = []
+        self.nodeList = nodeList
 
     def createBlock(self, header, body):
         # Should run through PoW and return block when PoW is found correctly.
         # This should be done in a seperate thread probably. (Not a proority, set difficulty to easy)
         return self.Block(timestamp=header.timestamp, transactions=body.transactions)
+
+    def getNodeList(self):
+        return self.nodeList
 
     class Block:
         '''

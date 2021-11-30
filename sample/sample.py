@@ -1,6 +1,6 @@
 import datetime
-from core.LocalBlockchain import Blockchain
-from core.Network import Network
+from core import Blockchain
+from core import Network
 
 
 def runMenu(blockchain):

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from typing import List
 
 import jsonpickle
-from LocalBlockchain import Blockchain
+from .LocalBlockchain import Blockchain
 import datetime
 
 
@@ -25,6 +25,8 @@ class txServer:
     '''
 
     def __init__(self, nodeList, port=65020):
+        print('Starting txServer with nodeList %s, and port %s...' %
+              (nodeList, port))
         self.nodeList = nodeList
         self.txPort = port
 
@@ -188,8 +190,6 @@ class txServer:
 
 
 if __name__ == '__main__':
-    # For testing purely the connections - no actual data is transferred between nodes.
-
     testTransactions = [Blockchain.Block.Body.Transaction(
         epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),
         Blockchain.Block.Body.Transaction(
@@ -206,8 +206,9 @@ if __name__ == '__main__':
         previousHash="")
 
     testBC = Blockchain()
+    nodelist = ['192.168.50.37']
 
-    test = txServer(nodeList=['192.168.50.37'])
+    test = txServer(nodelist)
 
     print('\n\n\nStarting tests!...........................................................................')
 

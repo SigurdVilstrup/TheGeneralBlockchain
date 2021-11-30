@@ -2,6 +2,7 @@ import selectors
 import socket
 from types import SimpleNamespace
 from copy import copy
+import time
 
 import jsonpickle
 
@@ -115,9 +116,11 @@ class rxServer:
         # * newBlock(block) -> Boolean
 
         match _request:
-            case b'1':
+            case b'ForceQuitServer':
                 print('quit')
-                quit()  # TODO Remove
+                self._send(key, self._createPreHeader(
+                    length=200, type='CMND'))
+                quit()
             case b'TGB:newTrans:':
                 print('Received transactions: %s' %
                       (jsonpickle.decode(_data.decode())))
