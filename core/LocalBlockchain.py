@@ -27,14 +27,11 @@ class Blockchain:
         self : self
             Initializes blockchain with a genesis block.
         '''
-        self.blocks = [
-            self.Block(timestamp=datetime.datetime.now(),
-                       transactions=[self.Block.Body.Transaction(
-                           epochTimestamp=datetime.datetime.now().timestamp, data='Genesis!')],
-                       previousHash='00000000000000')
-        ]
+        self.blocks = []
 
     def createBlock(self, header, body):
+        # Should run through PoW and return block when PoW is found correctly.
+        # This should be done in a seperate thread probably. (Not a proority, set difficulty to easy)
         return self.Block(timestamp=header.timestamp, transactions=body.transactions)
 
     class Block:
@@ -212,7 +209,7 @@ Hash:           %s
             print("Body:")
             self.printBody()
 
-    def addBlock(self, timestamp, transactions):
+    def addBlock(self, block: Block):
         '''
         Adds block to the blockchain
         ...
@@ -221,5 +218,4 @@ Hash:           %s
         timestamp : Timestamp
         transactions : Transaction[]
         '''
-        self.blocks.append(self.Block(timestamp=timestamp, transactions=transactions,
-                                      previousHash=self.blocks[-1].header.calcHash()))
+        self.blocks.append(block)

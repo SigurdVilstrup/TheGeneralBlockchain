@@ -1,6 +1,6 @@
 import datetime
-from LocalBlockchain import Blockchain
-import Network
+from core.LocalBlockchain import Blockchain
+from core.Network import Network
 
 
 def runMenu(blockchain):
@@ -51,12 +51,8 @@ addBlock    : Add new block to blockchain
 if __name__ == '__main__':
     _localBC = Blockchain()
 
-    nodes = []
+    nodeList = ['192.168.50.37']
 
-    _network = Network(_localBC, nodes)
-
-    for i in range(6):
-        _localBC.addBlock(timestamp=datetime.datetime.now(), transactions=[Blockchain.Block.Body.Transaction(
-            epochTimestamp=datetime.datetime.now().timestamp(), data='data point no. '+str(i)), ])
+    _network = Network(_localBC, nodeList)
 
     runMenu(_localBC)
