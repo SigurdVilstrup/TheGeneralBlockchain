@@ -3,7 +3,7 @@ from TGB import Blockchain
 from TGB import Network
 
 
-# TODO To be created later
+# todo, later create an actual sample of the blockchain functions.
 
 
 def runMenu(blockchain):

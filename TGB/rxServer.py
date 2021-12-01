@@ -88,7 +88,7 @@ class rxServer:
             self._readRequest(key=key)
 
         if mask & selectors.EVENT_WRITE:
-            self._respondRequest(key=key)
+            self._respondRequest(_key=key)
 
     def _readRequest(self, key):
         _socket = key.fileobj
@@ -106,6 +106,7 @@ class rxServer:
         if len(self.blockchain.blocks) > 0:
             newestHash = self.blockchain.blocks[-1].header.calcHash()
         else:
+            # 'updateMePleaseNodeFriend' is the official newestHash of a TGB blockchain that contains no blocks.
             newestHash = 'updateMePleaseNodeFriend'
 
         if data.decode() == newestHash:
@@ -114,7 +115,6 @@ class rxServer:
                 length=200, type='CMND'))
 
         elif data == b'blockchainData':
-            # TODO this needs to be dynamic so that the JSON strings are sent when asked for
             self._send(
                 key, jsonpickle.encode(self.blockchain.blocks).encode('utf-8'))
             pass
@@ -124,62 +124,71 @@ class rxServer:
             self._send(key, self._createPreHeader(
                 len(jsonpickle.encode(self.blockchain.blocks)), type='DATA'))
 
+    def _handleNodeRequest(self, data, key):
+        nodeList = jsonpickle.encode(self.blockchain.nodeList)
+
+        # If there is no data, send back preheader with length
+        if data == b'':
+            self._send(
+                key,
+                message=self._createPreHeader(length=len(nodeList.encode()), type='DATA'))
+
+        # If data is == getData, a specific request being send from network, send all the data back
+        if data == b'getData':
+            self._send(
+                key,
+                message=nodeList.encode())
         pass
 
-    def _respondRequest(self, key):
-        _socket = key.fileobj  # TODO REMOVE
+    def _respondRequest(self, _key):
+        _socket = _key.fileobj
 
-        _request = copy(key.data.rxb[0:16].rstrip())
-        _data = copy(key.data.rxb[16:])
+        _request = copy(_key.data.rxb[0:16].rstrip())
+        _data = copy(_key.data.rxb[16:])
 
         print("Received request: %s, with data %s" % (_request, _data))
-
-        # TODO create software responses
-        # * request(hash) -> Block(hash)
-        # * requestUpdate(merkleroot) -> Blockchain
-        # * newBlock(block) -> Boolean
 
         match _request:
             case b'ForceQuitServer':
                 print('quit')
-                self._send(key, self._createPreHeader(
+                self._send(_key, self._createPreHeader(
                     length=200, type='CMND'))
                 quit()
             case b'TGB:newTrans:':
                 print('Received transactions: %s' %
                       (jsonpickle.decode(_data.decode())))
-                self._send(key, self._createPreHeader(length=200, type='CMND'))
+                # TODO actually receive transaction and begin PoW
+                self._send(_key, self._createPreHeader(
+                    length=200, type='CMND'))
                 pass
             case b'TGB:PoW:':
+                self._handlePoWRequest(data=_data, key=_key)
                 print('Recevied block: %s' %
                       (jsonpickle.decode(_data.decode())))
 
                 # If block header nonce is correct
                 # TODO dynamically check whether it is correct
                 if True:
-                    self._send(key, self._createPreHeader(
+                    self._send(_key, self._createPreHeader(
                         length=200, type='CMND'))
 
                 # Else return error message
                 else:
                     self._send(key, self._createPreHeader(
-                        length=404, type='CMND'))
+                        length=400, type='CMND'))
                 pass
             case b'TGB:getNodes:':
-                if _data == b'':
-                    self._send(key, self._createPreHeader(
-                        length=len(b'List of all the nodes in this node!'), type='DATA'))
-                if _data == b'getData':
-                    self._send(key, b'List of all the nodes in this node!')
+                self._handleNodeRequest(data=_data, key=_key)
+
             case b'TGB:update:':
-                self._handleUpdateRequest(data=_data, key=key)
+                self._handleUpdateRequest(data=_data, key=_key)
 
             case _:
-                if key.data.rxb:
+                if _key.data.rxb:
                     print('Responding with: ', b'rx %s ok' %
-                          (key.data.rxb), 'to', key.data.addr)
-                    sent = _socket.send(b'rx %s ok' % (key.data.rxb))
-                    key.data.rxb = key.data.rxb[sent:]
+                          (_key.data.rxb), 'to', _key.data.addr)
+                    sent = _socket.send(b'rx %s ok' % (_key.data.rxb))
+                    _key.data.rxb = _key.data.rxb[sent:]
 
 
 if __name__ == '__main__':
