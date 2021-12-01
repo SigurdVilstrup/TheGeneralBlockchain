@@ -2,9 +2,6 @@ import datetime
 from typing import List, NamedTuple
 import hashlib
 import jsonpickle
-import json
-
-from jsonpickle.unpickler import decode
 
 
 # Dataclass for the blockchain
@@ -40,10 +37,11 @@ class Blockchain:
 
         print('Decoded into: %s' % jsonpickle.decode(jsonString))
 
-    def createBlock(self, header, body):
+    def createBlock(self, timestamp, transactions):
         # Should run through PoW and return block when PoW is found correctly.
         # This should be done in a seperate thread probably. (Not a proority, set difficulty to easy)
-        return self.Block(timestamp=header.timestamp, transactions=body.transactions)
+
+        return self.Block(timestamp=timestamp, transactions=transactions)
 
     def getNodeList(self):
         return self.nodeList

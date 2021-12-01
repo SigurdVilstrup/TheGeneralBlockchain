@@ -71,6 +71,20 @@ class Network:
 
         tx.forceUpdate()
 
+    def broadcastNewTransactions(self, transactions: List[Blockchain.Block.Body.Transaction]):
+        # TODO broadCastTransactions
+        tx = txServer(
+            nodeList=self.nodeIps, blockchainRef=self.blockchain, port=self.port)
+
+        tx.broadcastNewTransactions(transactions=transactions)
+
+    def broadcastPoW(self, block: Blockchain.Block):
+        # TODO broadcastPoW
+        tx = txServer(
+            nodeList=self.nodeIps, blockchainRef=self.blockchain, port=self.port)
+
+        tx.broadcastPoW(block)
+
     def smokeTestRxTxLocal(self):
         testTransactions = [Blockchain.Block.Body.Transaction(
             epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa'),

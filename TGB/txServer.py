@@ -178,10 +178,12 @@ class txServer:
         pass
 
     def broadcastNewTransactions(self, transactions: List[Blockchain.Block.Body.Transaction]):
-        # TODO broadcast a new transaction to the whole network
         for node in self.nodeList:
-            _type, _len = self.sendMsg(
-                node, 'TGB:newTrans:'.ljust(16)+jsonpickle.encode(transactions), 16)
+            _type, _len, _ = self.sendMsg(
+                host=node,
+                message='TGB:newTrans:'.ljust(
+                    16)+jsonpickle.encode(transactions),
+                msgLen=16)
             print('type found:', _type, 'Next len:', _len)
             if _type == 'CMND' and _len == 200:
                 print('node:', node, 'has received new transaction')
@@ -190,7 +192,6 @@ class txServer:
         pass
 
     def broadcastPoW(self, block: Blockchain.Block):
-        # TODO broadcast Proof of Work to network after receival of the new transaction(s)
         for node in self.nodeList:
             _type, _len = self.sendMsg(
                 node, 'TGB:PoW:'.ljust(16)+jsonpickle.encode(block), 16)

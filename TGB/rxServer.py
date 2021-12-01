@@ -1,9 +1,11 @@
 import selectors
 import socket
+import time
 from types import SimpleNamespace
 from copy import copy
 import jsonpickle
 from LocalBlockchain import Blockchain
+import random
 
 
 class rxServer:
@@ -138,7 +140,22 @@ class rxServer:
             self._send(
                 key,
                 message=nodeList.encode())
-        pass
+
+    def _handleNewTransaction(self, data, key):
+        # TODO should this be a seperate thread?
+        print('Received transactions: %s' %
+              (jsonpickle.decode(data.decode())))
+
+        self._send(key, self._createPreHeader(
+            length=200, type='CMND'))
+
+        tempBlock = self.blockchain.createBlock(
+            header=Blockchain.Block.Header(),
+            body=Blockchain.Block.Body())
+        # TODO actually start the process of creating the PoW, whether it be simulated or not.
+        # Simulate PoW for now - timer in random interval.
+        # msSleepTime = random.randint(50, 2000)
+        # time.sleep(msSleepTime/1000)
 
     def _respondRequest(self, _key):
         _socket = _key.fileobj
@@ -155,12 +172,8 @@ class rxServer:
                     length=200, type='CMND'))
                 quit()
             case b'TGB:newTrans:':
-                print('Received transactions: %s' %
-                      (jsonpickle.decode(_data.decode())))
-                # TODO actually receive transaction and begin PoW
-                self._send(_key, self._createPreHeader(
-                    length=200, type='CMND'))
-                pass
+                self._handleNewTransaction(data=_data, key=_key)
+
             case b'TGB:PoW:':
                 self._handlePoWRequest(data=_data, key=_key)
                 print('Recevied block: %s' %
