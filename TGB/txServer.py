@@ -200,7 +200,7 @@ class txServer:
                 print('node:', node, 'has accepted proof of work')
                 return
 
-            if _type == 'CMND' and _len == 404:
+            if _type == 'CMND' and _len == 400:
                 print('node:', node, 'has denied proof of work')
                 return
         pass

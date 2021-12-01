@@ -157,13 +157,27 @@ class rxServer:
         # msSleepTime = random.randint(50, 2000)
         # time.sleep(msSleepTime/1000)
 
+    def _handlePoWRequest(self, data, key):
+        print('Recevied block: %s' %
+              (jsonpickle.decode(data.decode())))
+
+        # If block header nonce is correct
+        # TODO dynamically check whether it is correct
+        if True:
+            self._send(key, self._createPreHeader(
+                length=200, type='CMND'))
+
+        # Else return error message
+        else:
+            self._send(key, self._createPreHeader(
+                length=400, type='CMND'))
+        pass
+
     def _respondRequest(self, _key):
         _socket = _key.fileobj
 
         _request = copy(_key.data.rxb[0:16].rstrip())
         _data = copy(_key.data.rxb[16:])
-
-        print("Received request: %s, with data %s" % (_request, _data))
 
         match _request:
             case b'ForceQuitServer':
@@ -171,25 +185,13 @@ class rxServer:
                 self._send(_key, self._createPreHeader(
                     length=200, type='CMND'))
                 quit()
+
             case b'TGB:newTrans:':
                 self._handleNewTransaction(data=_data, key=_key)
 
             case b'TGB:PoW:':
                 self._handlePoWRequest(data=_data, key=_key)
-                print('Recevied block: %s' %
-                      (jsonpickle.decode(_data.decode())))
 
-                # If block header nonce is correct
-                # TODO dynamically check whether it is correct
-                if True:
-                    self._send(_key, self._createPreHeader(
-                        length=200, type='CMND'))
-
-                # Else return error message
-                else:
-                    self._send(key, self._createPreHeader(
-                        length=400, type='CMND'))
-                pass
             case b'TGB:getNodes:':
                 self._handleNodeRequest(data=_data, key=_key)
 
