@@ -2,6 +2,9 @@ import datetime
 from typing import List, NamedTuple
 import hashlib
 import jsonpickle
+import json
+
+from jsonpickle.unpickler import decode
 
 
 # Dataclass for the blockchain
@@ -29,6 +32,13 @@ class Blockchain:
         '''
         self.blocks = []
         self.nodeList = nodeList
+
+    def updateBlockchainFromJSON(self, jsonString: str):
+        # object_type = str(type([Blockchain.Block]))
+        # json_dict = json.loads(jsonString)
+        # json_dict.update({"py/object": object_type})
+
+        print('Decoded into: %s' % jsonpickle.decode(jsonString))
 
     def createBlock(self, header, body):
         # Should run through PoW and return block when PoW is found correctly.

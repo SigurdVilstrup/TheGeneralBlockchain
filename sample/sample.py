@@ -1,6 +1,9 @@
 import datetime
-from core import Blockchain
-from core import Network
+from TGB import Blockchain
+from TGB import Network
+
+
+# TODO To be created later
 
 
 def runMenu(blockchain):

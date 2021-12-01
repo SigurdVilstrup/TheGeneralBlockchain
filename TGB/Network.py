@@ -1,9 +1,11 @@
 import datetime
 import threading
 from typing import List
-from .LocalBlockchain import Blockchain
-from .rxServer import rxServer
-from .txServer import txServer
+
+import jsonpickle
+from LocalBlockchain import Blockchain
+from txServer import txServer
+from rxServer import rxServer
 
 
 class Network:
@@ -49,14 +51,23 @@ class Network:
         # Starts new thread that continuesly is able to receive updates to the blockchain
         print('Starting rxThread on port: %s' % self.port)
         self.rxThread = threading.Thread(
-            target=rxServer, args=(self.port,))
+            target=rxServer, args=[self.blockchain, self.port])
         self.rxThread.start()
 
     def addNode():
+
         pass
         # TODO create method
 
-    def updateNetwork():
+    def update(self):
+        '''Requests an update to the blockchain from the connected network'''
+
+        # Create txServer
+        tx = txServer(
+            nodeList=self.nodeIps, blockchainRef=self.blockchain, port=self.port)
+
+        tx.forceUpdate()
+
         pass
         # TODO create method
 
@@ -104,6 +115,12 @@ class Network:
 
 if __name__ == '__main__':
     testBC = Blockchain(nodeList=['192.168.50.37'])
+
+    testBlocks = [Blockchain.Block(timestamp=datetime.datetime.now(), transactions=[Blockchain.Block.Body.Transaction(
+        epochTimestamp=datetime.datetime.now().timestamp(), data='hejsa')], previousHash='0')]
+
+    testBC.updateBlockchainFromJSON(jsonpickle.encode(testBlocks))
+
     _network = Network(blockchain=testBC)
 
-    _network.smokeTestRxTxLocal()
+    _network.update()

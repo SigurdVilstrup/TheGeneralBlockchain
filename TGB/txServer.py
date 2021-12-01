@@ -5,8 +5,9 @@ from types import SimpleNamespace
 from typing import List
 
 import jsonpickle
-from .LocalBlockchain import Blockchain
 import datetime
+
+from LocalBlockchain import Blockchain
 
 
 class txServer:
@@ -24,11 +25,13 @@ class txServer:
             sends message (serialized block / request) to rest of blockchain
     '''
 
-    def __init__(self, nodeList, port=65020):
+    def __init__(self, nodeList, blockchainRef: Blockchain, port=65020):
         print('Starting txServer with nodeList %s, and port %s...' %
               (nodeList, port))
         self.nodeList = nodeList
         self.txPort = port
+
+        self.blockchain = blockchainRef
 
         self.selector = selectors.DefaultSelector()
 
@@ -123,10 +126,15 @@ class txServer:
                 data.outb = data.outb[sent:]
 
     def forceUpdate(self):
+
+        if len(self.blockchain.blocks) > 0:
+            latestHash = self.blockchain.blocks[-1].calcHash()
+        else:
+            latestHash = 'updateMePleaseNodeFriend'
+
         for node in self.nodeList:
-            # TODO - newestHash should dynamically be the newest hash in the local blockchain
             _type, _len = self.sendMsg(
-                node, 'TGB:update:'.ljust(16)+'aLaterHash', 16, True)
+                node, 'TGB:update:'.ljust(16)+'%s' % latestHash, 16, True)
             print('type found:', _type, 'Next len:', _len)
 
             if _type == 'CMND' and _len == 200:
@@ -140,6 +148,7 @@ class txServer:
 
                 # _value that is received is the blockchain as a Json String
                 print(_value)
+                self.blockchain.update
                 pass
         pass
 

@@ -2,9 +2,8 @@ import selectors
 import socket
 from types import SimpleNamespace
 from copy import copy
-import time
-
 import jsonpickle
+from LocalBlockchain import Blockchain
 
 
 class rxServer:
@@ -15,9 +14,10 @@ class rxServer:
 
     '''
 
-    def __init__(self, port=65020):
+    def __init__(self, blockchainRef: Blockchain, port=65020):
         self.selector = selectors.DefaultSelector()
         self.rxPort = port
+        self.blockchain = blockchainRef
 
         # Registers socket to open on TCP connection
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -102,6 +102,30 @@ class rxServer:
             self.selector.unregister(_socket)
             _socket.close()
 
+    def _handleUpdateRequest(self, data, key):
+        if len(self.blockchain.blocks) > 0:
+            newestHash = self.blockchain.blocks[-1].header.calcHash()
+        else:
+            newestHash = 'updateMePleaseNodeFriend'
+
+        if data.decode() == newestHash:
+            print('Responding with: header data')
+            self._send(key, self._createPreHeader(
+                length=200, type='CMND'))
+
+        elif data == b'blockchainData':
+            # TODO this needs to be dynamic so that the JSON strings are sent when asked for
+            self._send(
+                key, jsonpickle.encode(self.blockchain.blocks).encode('utf-8'))
+            pass
+
+        else:
+            print('Responding with data to update blockchain.')
+            self._send(key, self._createPreHeader(
+                len(jsonpickle.encode(self.blockchain.blocks)), type='DATA'))
+
+        pass
+
     def _respondRequest(self, key):
         _socket = key.fileobj  # TODO REMOVE
 
@@ -148,22 +172,7 @@ class rxServer:
                 if _data == b'getData':
                     self._send(key, b'List of all the nodes in this node!')
             case b'TGB:update:':
-                if _data == b'newestHash':
-                    print('Responding with: header data')
-                    self._send(key, self._createPreHeader(
-                        length=200, type='CMND'))
-
-                elif _data == b'blockchainData':
-                    print('Responding with: header data')
-                    # TODO this needs to be dynamic so that the JSON strings are sent when asked for
-                    self._send(
-                        key, b"Updated blockchain data as a Json String type....")
-                    pass
-
-                else:
-                    print('Responding with data to update blockchain.')
-                    self._send(key, self._createPreHeader(
-                        len(b'Updated blockchain data as a Json String type....'), type='DATA'))
+                self._handleUpdateRequest(data=_data, key=key)
 
             case _:
                 if key.data.rxb:
