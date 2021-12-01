@@ -54,10 +54,13 @@ class Network:
             target=rxServer, args=[self.blockchain, self.port])
         self.rxThread.start()
 
-    def addNode():
+    def addNode(self):
+        '''Request all nodes from all nodes in nodeList'''
+        # Create txServer
+        tx = txServer(
+            nodeList=self.nodeIps, blockchainRef=self.blockchain, port=self.port)
 
-        pass
-        # TODO create method
+        tx.getNodes()
 
     def update(self):
         '''Requests an update to the blockchain from the connected network'''
@@ -67,9 +70,6 @@ class Network:
             nodeList=self.nodeIps, blockchainRef=self.blockchain, port=self.port)
 
         tx.forceUpdate()
-
-        pass
-        # TODO create method
 
     def smokeTestRxTxLocal(self):
         testTransactions = [Blockchain.Block.Body.Transaction(

@@ -35,7 +35,7 @@ class txServer:
 
         self.selector = selectors.DefaultSelector()
 
-    def sendMsg(self, host, msg, msgLen, preheader=False):
+    def sendMsg(self, host, msg, msgLen):
         '''
         sends message (serialized block) to rest of blockchain
         ...
@@ -45,9 +45,10 @@ class txServer:
             host that the message should be send to 'ip address'
         msg : String
             message (serialized blocks / request) to send to other nodes in the network
-        '''
 
-        # TODO needs to be able to receive header first - get length and afterwards receiver data/body
+        ---
+        Return either a tuple of with type and length or the value of the received message.
+        '''
 
         self._startConnection(
             host=host,
@@ -63,11 +64,8 @@ class txServer:
                     value = self._handleTxRx(key=key, mask=mask, rxLen=msgLen)
 
             if not self.selector.get_map():
-                if preheader:
-                    _type, _len = self._getLenFromPreHeader(value)
-                    return _type, _len
-                else:
-                    return value
+                _type, _len = self._getLenFromPreHeader(value)
+                return (_type, _len, value)
 
     def _getLenFromPreHeader(self, value):
         '''
@@ -134,7 +132,7 @@ class txServer:
 
         for node in self.nodeList:
             _type, _len = self.sendMsg(
-                node, 'TGB:update:'.ljust(16)+'%s' % latestHash, 16, True)
+                node, 'TGB:update:'.ljust(16)+'%s' % latestHash, 16)
             print('type found:', _type, 'Next len:', _len)
 
             if _type == 'CMND' and _len == 200:
@@ -153,28 +151,37 @@ class txServer:
         pass
 
     def getBlockchain(self, blockchainReference: Blockchain):
-        # TODO integrate later - how is it different to forceUpdate? Maybe only meant to be called when initialized? To skip update request.
+        # todo, integrate later - how is it different to forceUpdate? Maybe only meant to be called when initialized? To skip update request.
         pass
 
-    def getNodes(self, blockchainReference: Blockchain):
-        # TODO request all nodes from node(s)
+    def getNodes(self):
+        # Request all nodes from the nodes individually.
         for node in self.nodeList:
-            _type, _len = self.sendMsg(
-                node, 'TGB:getNodes:'.ljust(16), 16, True)
+            _type, _len, _ = self.sendMsg(
+                node, 'TGB:getNodes:'.ljust(16), 16)
             print('type found:', _type, 'Next len:', _len)
+
             if _type == 'DATA':
-                _value = self.sendMsg(
+                # Sendings message: 'TGB:getNodes       getData' to request the actual data instead of the preheader.
+                _, _, _value = self.sendMsg(
                     node, 'TGB:getNodes:'.ljust(16)+'getData', _len)
-                print(_value)
                 # _value received is the list of nodes as a Json string
-                pass
+                foreignNodes = [str](jsonpickle.decode(_value))
+
+                # Add the nodes that are not currently present in the locla nodelist to the local nodelist
+                for n in foreignNodes:
+                    if n in self.nodelist:
+                        pass
+                    elif n not in self.nodeList:
+                        self.nodeList.append(n)
+
         pass
 
     def broadcastNewTransactions(self, transactions: List[Blockchain.Block.Body.Transaction]):
         # TODO broadcast a new transaction to the whole network
         for node in self.nodeList:
             _type, _len = self.sendMsg(
-                node, 'TGB:newTrans:'.ljust(16)+jsonpickle.encode(transactions), 16, True)
+                node, 'TGB:newTrans:'.ljust(16)+jsonpickle.encode(transactions), 16)
             print('type found:', _type, 'Next len:', _len)
             if _type == 'CMND' and _len == 200:
                 print('node:', node, 'has received new transaction')
@@ -186,7 +193,7 @@ class txServer:
         # TODO broadcast Proof of Work to network after receival of the new transaction(s)
         for node in self.nodeList:
             _type, _len = self.sendMsg(
-                node, 'TGB:PoW:'.ljust(16)+jsonpickle.encode(block), 16, True)
+                node, 'TGB:PoW:'.ljust(16)+jsonpickle.encode(block), 16)
 
             if _type == 'CMND' and _len == 200:
                 print('node:', node, 'has accepted proof of work')
