@@ -6,12 +6,17 @@ The General Blockchain project has been developed as part of Sigurd PvA Vilstrup
 
 The blockchain is python based, and should be easily understood and very accesible.
 
+Currently this project is a work in progress. It is currently able to display how a blockchain stores data and communicates with nodes, but is missing alot of the actual functionality of an actual blockchain. It's mainly a GUI that displays blockchain functionality, with a load of non-functioning machine code underneath.
+
 ## Todo
 
 - Interfacing between the modules, i.e.:
   - Local blockchain
+    - WIP // Main functionality thats missing is calculation of PoW 
   - Communication
-  - GUI
+    - Can send all information back and forth, but optmization and such is needed
+  - ~~GUI~~ ✔
+- In general refactoring and optimization of all code
 
 ### Communication protocol
 
@@ -33,11 +38,11 @@ The blockchain is python based, and should be easily understood and very accesib
 
 - UI improvements
 
-  - Search fuctionality
-  - Node information functionality
-  - Block information functionality
+  - ~~Search fuctionality~~ ✔
+  - ~~Node information functionality~~ ✔
+  - ~~Block information functionality~~ ✔
 
 - Interfacing with:
-  - other elements user interaction, i.e.: buttons etc.
-  - local blockchain - i.e.: showing state of the blockchain
-  - other nodes in network
+  - ~~other elements user interaction, i.e.: buttons etc.~~ ✔
+  - ~~local blockchain - i.e.: showing state of the blockchain~~ ✔
+  - ~~other nodes in network~~ ✔
