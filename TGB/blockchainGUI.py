@@ -5,6 +5,10 @@ import hashlib
 from os import name
 import tkinter as tk
 
+import re as re
+
+import jsonpickle
+
 from LocalBlockchain import Blockchain
 
 
@@ -279,8 +283,6 @@ class tgbGUI:
             yscrollcommand=scb_vert.set,
             width=100)
 
-        print(self.blocks[index].body.transactions)
-
         for transaction in self.blocks[index].body.transactions:
             timestamp = datetime.datetime.fromtimestamp(
                 transaction.epochTimestamp).strftime('%d-%m-%Y/%H:%M:%S')
@@ -308,21 +310,83 @@ class tgbGUI:
             'Search results in blockchain for \'%s\'' % searchString)
         self.searchWindow.iconphoto(False, tk.PhotoImage(
             file='Graphics/icon.drawio.png'))
-        self.searchWindow.geometry('600x300')
         self.searchWindow.configure(background='white')
 
-        # How many blocks was found containing SearchString at leas once.
-        noOfBlocks = 10
+        # How many blocks was found containing SearchString at least once.
+        resultBlocks = self._search(searchString)
+        noOfBlocks = len(resultBlocks[0])
 
+        # Display search in blocks
         tk.Label(master=self.searchWindow,
-                 text='%s was found in %s blocks, listed below:' % (
+                 text='"%s" was found in %s blocks, listed below:' % (
                      searchString, noOfBlocks),
                  font='Roboto 12',
                  background='white',
-                 justify='left').pack(side='top', anchor='nw', pady=5, padx=5)
+                 justify='left').grid(row=0, column=0, pady=5, padx=5)
 
-        # TODO show way of showing results of searchString
-        # Note: probably for all blocks (re.search(searchString) - if not null, string is present in block, return list of blocks and show their hash and index)
+        frm_list_blocks = tk.Frame(
+            master=self.searchWindow, background='white')
+
+        lsb_blocks = tk.Listbox(
+            master=frm_list_blocks,
+            height=15,
+            width=50)
+
+        for blockIndex in resultBlocks[0]:
+            lsb_blocks.insert('end', 'Block number %s' % (blockIndex))
+
+        lsb_blocks.pack(pady=5, padx=5)
+
+        frm_list_blocks.grid(column=0, row=1, pady=5, padx=5)
+
+        # Display search in nodes
+        noOfNodes = len(resultBlocks[1])
+
+        tk.Label(master=self.searchWindow,
+                 text='"%s" was found in %s nodes, listed below:' % (
+                     searchString, noOfNodes),
+                 font='Roboto 12',
+                 background='white',
+                 justify='left').grid(row=0, column=1, pady=5, padx=5)
+
+        frm_list_nodes = tk.Frame(master=self.searchWindow, background='white')
+
+        lsb_nodes = tk.Listbox(
+            master=frm_list_nodes,
+            height=15,
+            width=50)
+
+        for nodeIndex in resultBlocks[1]:
+            lsb_nodes.insert('end', 'Node number %s' % (nodeIndex))
+
+        lsb_nodes.pack(pady=5, padx=5)
+
+        frm_list_nodes.grid(column=1, row=1, pady=5, padx=5)
+
+    def _search(self, searchStr):
+        return self._searchBlocks(searchStr), self._searchNodes(searchStr)
+
+    def _searchBlocks(self, searchStr):
+        blocksWithResult = []
+
+        for idx, block in enumerate(self.blocks):
+            rawData = jsonpickle.encode(block)
+
+            if re.search(searchStr.lower(), rawData.lower()):
+                blocksWithResult.append(idx)
+
+        return blocksWithResult
+
+    def _searchNodes(self, searchStr):
+        nodesWithResult = []
+
+        for idx, block in enumerate(self.nodeList):
+            rawData = jsonpickle.encode(block)
+
+            if re.search(searchStr.lower(), rawData.lower()):
+                nodesWithResult.append(idx)
+
+        return nodesWithResult
 
     def _buildNode(self, canvas, center, height, width, index, ip, name, buttons=True):
         h = height/2
