@@ -1,5 +1,7 @@
 # The General Blockchain
 
+### PLEASE NOTE THIS A WORK IN PROGRESS - NO RELEASE HAS BEEN ACHIEVED AS OF YET
+
 The purpose of the general blockchain is to create a blockchain that enables easier understanding and general knowledge of how a blockchain works and how it might help organisations structure their data in a secure manner.
 
 The General Blockchain project has been developed as part of Sigurd PvA Vilstrup's Master thesis in Technology Based Business Development at Aarhus University.
@@ -7,6 +9,19 @@ The General Blockchain project has been developed as part of Sigurd PvA Vilstrup
 The blockchain is python based, and should be easily understood and very accesible.
 
 Currently this project is a work in progress. It is currently able to display how a blockchain stores data and communicates with nodes, but is missing alot of the actual functionality of an actual blockchain. It's mainly a GUI that displays blockchain functionality, with a load of non-functioning machine code underneath.
+
+## With GUI as shown
+![Screenshot of the overall GUI](http://s.vavilstrup.dk/wp-content/uploads/2021/12/root.png)
+
+Overall representation of the whole blockchain
+
+![Block representation](http://s.vavilstrup.dk/wp-content/uploads/2021/12/block.png)
+
+Representation of the individual block - information and transactions are shown.
+
+![Search](http://s.vavilstrup.dk/wp-content/uploads/2021/12/search.png)
+
+Basic search functionality, that shown in what blocks or nodes the search string is found (use Regex for more accurate search)
 
 ## Todo
 
