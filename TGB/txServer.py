@@ -141,13 +141,12 @@ class txServer:
 
             if _type == 'DATA':
                 print("Getting blockchain from updated node")
-                _value = self.sendMsg(
+                _, _, _value = self.sendMsg(
                     node, 'TGB:update:'.ljust(16)+'blockchainData', _len)
 
                 # _value that is received is the blockchain as a Json String
                 print(_value)
-                self.blockchain.update
-                pass
+                self.blockchain.update(jsonpickle.decode(_value))
         pass
 
     def getBlockchain(self, blockchainReference: Blockchain):

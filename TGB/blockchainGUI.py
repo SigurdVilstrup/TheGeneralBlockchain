@@ -1,13 +1,19 @@
+from copy import copy
 from ctypes import alignment
 import hashlib
 from os import name
 import tkinter as tk
-from tkinter import font
+
+from LocalBlockchain import Blockchain
 
 
-# Master frame ################################################
 class tgbGUI:
-    def __init__(self, root):
+    def __init__(self, root, blockchainRef: Blockchain):
+        self.blockchain = blockchainRef
+        self.nodeList = [('localhost', 'local node')]
+        for node in blockchainRef.nodeList:
+            self.nodeList.append((node, 'Unnamed'))
+
         self.root = root
         self.root.iconphoto(False, tk.PhotoImage(
             file='Graphics/icon.drawio.png'))
@@ -17,9 +23,72 @@ class tgbGUI:
 
         self._tgbHeader()
         self._blockRepresentation()
-        self._nodeRepresentation(master=self.root, dimensions=(1200, 550))
 
-        pass
+        self.frm_nodeRep = tk.Frame(master=self.root, relief='sunken',
+                                    borderwidth=2,
+                                    background='white')
+        self._nodeRepresentation(
+            masterFrame=self.frm_nodeRep, dimensions=(1200, 550))
+
+    def _openNewNodeWindow(self):
+        self.newNodeWindow = tk.Toplevel(self.root)
+        self.newNodeWindow.title('Add new node')
+        self.newNodeWindow.iconphoto(False, tk.PhotoImage(
+            file='Graphics/icon.drawio.png'))
+        self.newNodeWindow.configure(background='white')
+
+        # Get info: IP, Network, Name, Index
+
+        # Display info with ability to change name
+        frm_newNode = tk.Frame(master=self.newNodeWindow, background='white')
+
+        tk.Label(
+            master=frm_newNode,
+            text="ip:\t",
+            anchor='w',
+            background='white').grid(column=0, row=0, sticky='w', padx=5, pady=5)
+        tk.Label(
+            master=frm_newNode,
+            text="name:\t",
+            anchor='w',
+            background='white').grid(column=0, row=1, padx=5, pady=5)
+
+        ent_ip = tk.Entry(master=frm_newNode)
+        ent_ip.grid(column=1, row=0, padx=5, pady=5)
+
+        ent_name = tk.Entry(master=frm_newNode)
+        ent_name.grid(column=1, row=1, padx=5, pady=5)
+
+        tk.Button(
+            master=frm_newNode,
+            text='Add new node',
+            command=lambda ip=ent_ip, name=ent_name: self._addNewNode(ip, name)).grid(column=3, row=3, padx=15, pady=15)
+
+        frm_newNode.pack()
+
+    def _addNewNode(self, ip, name):
+        self.nodeList.append((ip.get(), name.get()))
+
+        self._forceUpdateNodes(destroyWindow=self.newNodeWindow)
+
+    def _nameNode(self, nodeIndex, newNameEnt):
+        self.nodeList[nodeIndex] = (
+            self.nodeList[nodeIndex][0], newNameEnt.get())
+
+        self._forceUpdateNodes(destroyWindow=self.nodeWindow)
+        # Update the main Node rep screen
+
+    def _forceUpdateNodes(self, destroyWindow=None):
+        self.frm_nodeRep.destroy()
+        self.frm_nodeRep = tk.Frame(master=self.root, relief='sunken',
+                                    borderwidth=2,
+                                    background='white')
+        self._nodeRepresentation(
+            masterFrame=self.frm_nodeRep,
+            dimensions=(1200, 550))
+
+        if destroyWindow:
+            destroyWindow.destroy()
 
     def _openNodeWindow(self, index):
         self.nodeWindow = tk.Toplevel(self.root)
@@ -41,7 +110,7 @@ class tgbGUI:
             background='white').grid(column=0, row=0, sticky='w', padx=5, pady=5)
         lbl_ip = tk.Label(
             master=frm_info,
-            text="106.213.213",
+            text=self.nodeList[index][0],
             justify='left',
             anchor='w',
             background='white').grid(column=1, row=0, sticky='w', padx=5, pady=5)
@@ -52,14 +121,16 @@ class tgbGUI:
             background='white').grid(column=0, row=1, padx=5, pady=5)
         lbl_name = tk.Label(
             master=frm_info,
-            text="Node name",
+            text=self.nodeList[index][1],
             justify='left',
             anchor='w',
             background='white').grid(column=1, row=1, padx=5, pady=5)
-        ent_name = tk.Entry(master=frm_info).grid(
-            column=2, row=1, padx=5, pady=5)
-        btn_save = tk.Button(master=frm_info,
-                             text='Save new name').grid(column=3, row=1, padx=5, pady=5)
+        ent_name = tk.Entry(master=frm_info)
+        ent_name.grid(column=2, row=1, padx=5, pady=5)
+        btn_save = tk.Button(
+            master=frm_info,
+            text='Save new name',
+            command=lambda i=index, n=ent_name: self._nameNode(i, n)).grid(column=3, row=1, padx=5, pady=5)
 
         frm_info.columnconfigure(5, weight=2)
 
@@ -70,9 +141,12 @@ class tgbGUI:
 
         frm_info.pack(pady=10, padx=10, expand=True, fill='x')
 
+        self.frm_nodeWindow = tk.Frame(master=self.nodeWindow, relief='sunken',
+                                       borderwidth=2,
+                                       background='white')
         # Display Network
         self._nodeRepresentation(
-            master=self.nodeWindow, dimensions=(800, 400,), buttons=False, homeNodeIndex=index)
+            masterFrame=self.frm_nodeWindow, dimensions=(800, 400,), buttons=False, homeNodeIndex=index)
 
     def _openBlockWindow(self, index):
         self.blockwindow = tk.Toplevel(self.root)
@@ -180,7 +254,7 @@ class tgbGUI:
         # TODO show way of showing results of searchString
         # Note: probably for all blocks (re.search(searchString) - if not null, string is present in block, return list of blocks and show their hash and index)
 
-    def _buildNode(self, canvas, center, height, width, index, ip, name='', buttons=True):
+    def _buildNode(self, canvas, center, height, width, index, ip, name, buttons=True):
         h = height/2
         w = width/2
 
@@ -196,9 +270,6 @@ class tgbGUI:
 
         )
         canvas.tag_raise(tempRect)
-
-        if name == '':
-            name = 'Node %s' % index
 
         text = '%s\n\n%s' % (name, ip)
 
@@ -227,11 +298,13 @@ class tgbGUI:
             )
             canvas.tag_raise(tempBtn)
 
-    def _buildRemoteNode(self, canvas, index, buildpos, hostaddress, height, width, global_center, buttons):
+    def _buildRemoteNode(self, canvas, index, buildpos, hostaddress, height, width, global_center, buttons, name):
         start = global_center
 
         # End is calculated as the middle of the remote node being build
         match buildpos:
+            case 0:
+                end = (global_center[0], global_center[1])
             case 1:
                 end = (global_center[0], global_center[1]-(height*1.5))
             case 2:
@@ -277,7 +350,7 @@ class tgbGUI:
                 end = (global_center[0]-(width*2),
                        global_center[1]-(height*1.5))
             case _:
-                end = (0, 0)
+                end = (100, 100)
 
         temp_line = canvas.create_line(
             start[0],
@@ -295,6 +368,7 @@ class tgbGUI:
             height=height,
             width=width*1.2,
             index=index,
+            name=name,
             ip=hostaddress,
             buttons=buttons)
 
@@ -303,39 +377,22 @@ class tgbGUI:
 
         ratioh = height/5
 
-        # Build 5 remote nodes for show
-        for index in range(1, 10):
-            if index is not centerNode:
-                self._buildRemoteNode(
-                    canvas=canvas,
-                    index=index,
-                    buildpos=index,
-                    hostaddress='192.%s.0.%s' % (index*51.5, index),
-                    height=ratioh,
-                    width=ratioh*0.75,
-                    global_center=center,
-                    buttons=buttons)
-            if index is centerNode:
-                self._buildRemoteNode(
-                    canvas=canvas,
-                    index=0,
-                    buildpos=index,
-                    hostaddress='localhost',
-                    height=ratioh,
-                    width=ratioh*0.75,
-                    global_center=center,
-                    buttons=buttons)
+        nodes = copy(self.nodeList)
+        if centerNode != 0:
+            nodes[0], nodes[centerNode] = nodes[centerNode], nodes[0]
 
-        # Building center node (localnode)
-        self._buildNode(
-            canvas=canvas,
-            center=center,
-            height=ratioh,
-            width=ratioh*0.75,
-            index=index,
-            ip='localhost' if 0 else '192.%s.0.%s' % (index*51.5, index),
-            name='Node %s' % centerNode,
-            buttons=buttons)
+        # Build 5 remote nodes for show
+        for index, node in enumerate(nodes):
+            self._buildRemoteNode(
+                canvas=canvas,
+                index=index,
+                buildpos=index,
+                name=node[1],
+                hostaddress=node[0],
+                height=ratioh,
+                width=ratioh*0.75,
+                global_center=center,
+                buttons=buttons)
 
     def _createBlocks(self, frame, test: bool):
         if test:
@@ -360,7 +417,7 @@ class tgbGUI:
                     command=lambda index=c: self._openBlockWindow(index=index)).pack(anchor='center')
                 frm_Temp.grid(row=0, column=c, pady=10, padx=10)
         else:
-            # TODO implement dynamically gettings the blocks from the local blockchain
+            blocks = self.blockchain.blocks
             pass
 
     def _setScrollRegion(self, canvas):
@@ -408,7 +465,8 @@ class tgbGUI:
             master=self.frm_buttons,
             text='Add New Node',
             font='Roboto 10',
-            background='white',).grid(row=3, column=1, pady=5, padx=5, sticky='e')
+            background='white',
+            command=lambda: self._openNewNodeWindow()).grid(row=3, column=1, pady=5, padx=5, sticky='e')
 
         self.frm_tgb.columnconfigure(1, weight=2)
         self.frm_tgb.columnconfigure(2, weight=2)
@@ -471,39 +529,37 @@ class tgbGUI:
         self.cvs_blocks.bind("<Configure>", lambda event,
                              c=self.cvs_blocks: self._setScrollRegion(c))
 
-        self._createBlocks(self.frm_blocks, test=True)
+        self._createBlocks(self.frm_blocks, test=False)
         self.frm_bcRep.pack(padx=10, pady=10, expand=True, fill='x')
 
     # Master frame
 
-    def _nodeRepresentation(self, master, dimensions, buttons: bool = True, homeNodeIndex=0):
+    def _nodeRepresentation(self, masterFrame, dimensions, buttons: bool = True, homeNodeIndex=0):
         w, h = dimensions
 
-        self.frm_nodeRep = tk.Frame(master=master,
-                                    relief='sunken',
-                                    borderwidth=2,
-                                    background='white')
+        cvs_nodeRep = tk.Canvas(master=masterFrame,
+                                height=h,
+                                width=w,
+                                background='white')
 
-        self.cvs_nodeRep = tk.Canvas(master=self.frm_nodeRep,
-                                     height=h,
-                                     width=w,
-                                     background='white')
-
-        self.cvs_nodeRep.pack()
+        cvs_nodeRep.pack()
 
         self._buildNodesWithConnections(
-            self.cvs_nodeRep,
+            cvs_nodeRep,
             h,
             w,
             buttons,
             centerNode=homeNodeIndex)
 
-        self.frm_nodeRep.pack(fill='both',
+        masterFrame.pack(fill='both',
                               padx=10, pady=10, expand=True, side='bottom')
 
 
 if __name__ == '__main__':
     # For testing the GUI
+    testNodes = ['1.1.1.1', 'Sigurd', 'Lars']
+    testBC = Blockchain(nodeList=testNodes)
+
     root = tk.Tk()
-    tester = tgbGUI(root)
+    tester = tgbGUI(root=root, blockchainRef=testBC)
     root.mainloop()
