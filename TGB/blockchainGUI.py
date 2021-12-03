@@ -1,5 +1,6 @@
 from copy import copy
 from ctypes import alignment
+import datetime
 import hashlib
 from os import name
 import tkinter as tk
@@ -10,6 +11,7 @@ from LocalBlockchain import Blockchain
 class tgbGUI:
     def __init__(self, root, blockchainRef: Blockchain):
         self.blockchain = blockchainRef
+        self.blocks = blockchainRef.blocks
         self.nodeList = [('localhost', 'local node')]
         for node in blockchainRef.nodeList:
             self.nodeList.append((node, 'Unnamed'))
@@ -22,7 +24,12 @@ class tgbGUI:
         self.root.configure(background='white')
 
         self._tgbHeader()
-        self._blockRepresentation()
+
+        self.frm_blockRep = tk.Frame(master=self.root,
+                                     relief='sunken',
+                                     borderwidth=2, background='white')
+
+        self._blockRepresentation(masterFrame=self.frm_blockRep)
 
         self.frm_nodeRep = tk.Frame(master=self.root, relief='sunken',
                                     borderwidth=2,
@@ -30,14 +37,61 @@ class tgbGUI:
         self._nodeRepresentation(
             masterFrame=self.frm_nodeRep, dimensions=(1200, 550))
 
+    def _forceUpdate(self):
+        self._forceUpdateNodes()
+        self._forceUpdateBlocks()
+
+    def _forceUpdateBlocks(self, destroyWindow=None):
+        self.frm_blockRep.destroy()
+        self.frm_blockRep = tk.Frame(master=self.root,
+                                     relief='sunken',
+                                     borderwidth=2, background='white')
+
+        self._blockRepresentation(masterFrame=self.frm_blockRep)
+
+        if destroyWindow:
+            destroyWindow.destroy()
+
+    def _openNewTransactionsWindow(self):
+        self.newTransactionWindow = tk.Toplevel(self.root)
+        self.newTransactionWindow.title('Add new node')
+        self.newTransactionWindow.iconphoto(False, tk.PhotoImage(
+            file='Graphics/icon.drawio.png'))
+        self.newTransactionWindow.configure(background='white')
+
+        tk.Label(master=self.newTransactionWindow,
+                 text='Transactional data:').pack(side='left')
+        ent_data = tk.Entry(master=self.newTransactionWindow)
+        ent_data.pack(side='left')
+
+        tk.Button(
+            master=self.newTransactionWindow,
+            text='Broadcast transaction',
+            command=lambda t=ent_data: self._addNewBlock(transactionEnt=t)).pack(side='left')
+
+    def _addNewBlock(self, transactionEnt):
+        transData = transactionEnt.get()
+
+        transaction = Blockchain.Block.Body.Transaction(
+            datetime.datetime.now().timestamp(),
+            transData)
+
+        previousHash = self.blocks[-1].header.calcHash() if self.blocks[-1] else '0'
+
+        self.blocks.append(Blockchain.Block(
+            datetime.datetime.now(),
+            transaction,
+            previousHash))
+
+        self._forceUpdateBlocks(destroyWindow=self.newTransactionWindow)
+        pass
+
     def _openNewNodeWindow(self):
         self.newNodeWindow = tk.Toplevel(self.root)
         self.newNodeWindow.title('Add new node')
         self.newNodeWindow.iconphoto(False, tk.PhotoImage(
             file='Graphics/icon.drawio.png'))
         self.newNodeWindow.configure(background='white')
-
-        # Get info: IP, Network, Name, Index
 
         # Display info with ability to change name
         frm_newNode = tk.Frame(master=self.newNodeWindow, background='white')
@@ -153,7 +207,6 @@ class tgbGUI:
         self.blockwindow.title('Block %s Information' % index)
         self.blockwindow.iconphoto(False, tk.PhotoImage(
             file='Graphics/icon.drawio.png'))
-        self.blockwindow.geometry('300x600')
         self.blockwindow.configure(background='white')
 
         # Frame for top information
@@ -171,31 +224,43 @@ class tgbGUI:
         tk.Label(master=frm_info, text='Blockchain version:',
                  justify='left', background='white').grid(
             column=0, row=3, pady=1, padx=5, sticky='nw')
-        tk.Label(master=frm_info, text='Difficulty:        ',
+        tk.Label(master=frm_info, text='Body size:        ',
                  justify='left', background='white').grid(
             column=0, row=4, pady=1, padx=5, sticky='nw')
-        tk.Label(master=frm_info, text='Nonce:             ',
+        tk.Label(master=frm_info, text='Previous hash:        ',
                  justify='left', background='white').grid(
             column=0, row=5, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='Difficulty:        ',
+                 justify='left', background='white').grid(
+            column=0, row=6, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text='Nonce:             ',
+                 justify='left', background='white').grid(
+            column=0, row=7, pady=1, padx=5, sticky='nw')
 
         tk.Label(master=frm_info, text=index,
                  justify='left', background='white').grid(
             column=1, row=0, pady=1, padx=5, sticky='nw')
-        tk.Label(master=frm_info, text='',
+        tk.Label(master=frm_info, text=self.blocks[index].header.calcHash(),
                  justify='left', background='white').grid(
             column=1, row=1, pady=1, padx=5, sticky='nw')
-        tk.Label(master=frm_info, text='',
+        tk.Label(master=frm_info, text=self.blocks[index].header.merkleroot,
                  justify='left', background='white').grid(
             column=1, row=2, pady=1, padx=5, sticky='nw')
-        tk.Label(master=frm_info, text='',
+        tk.Label(master=frm_info, text=self.blocks[index].header.version,
                  justify='left', background='white').grid(
             column=1, row=3, pady=1, padx=5, sticky='nw')
-        tk.Label(master=frm_info, text='',
+        tk.Label(master=frm_info, text=self.blocks[index].header.bodySize,
                  justify='left', background='white').grid(
             column=1, row=4, pady=1, padx=5, sticky='nw')
-        tk.Label(master=frm_info, text='',
+        tk.Label(master=frm_info, text=self.blocks[index].header.preHash,
                  justify='left', background='white').grid(
             column=1, row=5, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text=self.blocks[index].header.difficulty,
+                 justify='left', background='white').grid(
+            column=1, row=6, pady=1, padx=5, sticky='nw')
+        tk.Label(master=frm_info, text=self.blocks[index].header.nonce,
+                 justify='left', background='white').grid(
+            column=1, row=7, pady=1, padx=5, sticky='nw')
 
         # Frame for transactions
         frm_trans = tk.Frame(master=self.blockwindow,
@@ -210,12 +275,17 @@ class tgbGUI:
 
         lsb_trans = tk.Listbox(
             master=frm_list,
-            height=20,
+            height=15,
             yscrollcommand=scb_vert.set,
-            width=40)
+            width=100)
 
-        for line in range(0, 100):
-            lsb_trans.insert('end', 'transaction no: %s' % line)
+        print(self.blocks[index].body.transactions)
+
+        for transaction in self.blocks[index].body.transactions:
+            timestamp = datetime.datetime.fromtimestamp(
+                transaction.epochTimestamp).strftime('%d-%m-%Y/%H:%M:%S')
+            lsb_trans.insert('end', '%s    :    %s' %
+                             (timestamp, transaction.data))
 
         lsb_trans.pack(fill='both', padx=3, pady=3, side='bottom')
         scb_vert.config(command=lsb_trans.yview)
@@ -417,8 +487,24 @@ class tgbGUI:
                     command=lambda index=c: self._openBlockWindow(index=index)).pack(anchor='center')
                 frm_Temp.grid(row=0, column=c, pady=10, padx=10)
         else:
-            blocks = self.blockchain.blocks
-            pass
+            for idx, block in enumerate(self.blocks):
+                frm_Temp = tk.Frame(frame, relief='raised',
+                                    borderwidth=1, height=100, width=100)
+                temp_hash = block.header.calcHash()
+                tk.Button(
+                    master=frm_Temp,
+                    text='Block %s\nwith hash:\n%s...' % (
+                        idx, temp_hash[:8]),
+                    image=self.pixelVirtual,
+                    anchor='center',
+                    width=75,
+                    height=125,
+                    background='white',
+                    compound='c',
+                    font='Roboto 9',
+                    command=lambda index=idx: self._openBlockWindow(index=index)).pack(anchor='center')
+                frm_Temp.grid(row=0, column=idx, pady=10, padx=10)
+                pass
 
     def _setScrollRegion(self, canvas):
         '''Reset the scroll region to encompass the inner frame'''
@@ -455,12 +541,14 @@ class tgbGUI:
             master=self.frm_buttons,
             text='Force Update',
             font='Roboto 10',
-            background='white').grid(row=1, column=1, pady=5, padx=5, sticky='e')
+            background='white',
+            command=lambda: self._forceUpdate()).grid(row=1, column=1, pady=5, padx=5, sticky='e')
         self.btn_newTransaction = tk.Button(
             master=self.frm_buttons,
-            text='New Transaction',
+            text='New Transactions',
             font='Roboto 10',
-            background='white',).grid(row=2, column=1, pady=5, padx=5, sticky='e')
+            background='white',
+            command=lambda: self._openNewTransactionsWindow()).grid(row=2, column=1, pady=5, padx=5, sticky='e')
         self.btn_newTransaction = tk.Button(
             master=self.frm_buttons,
             text='Add New Node',
@@ -506,17 +594,14 @@ class tgbGUI:
         self.frm_searchbar.pack()
 
     # Blockchain representation frame ################################################
-    def _blockRepresentation(self):
+    def _blockRepresentation(self, masterFrame):
         self.pixelVirtual = tk.PhotoImage(width=1, height=1)
 
-        self.frm_bcRep = tk.Frame(master=self.root, relief='sunken',
-                                  borderwidth=2, background='white')
-
-        self.cvs_blocks = tk.Canvas(master=self.frm_bcRep,
+        self.cvs_blocks = tk.Canvas(master=masterFrame,
                                     background='white', height=150)
         self.frm_blocks = tk.Frame(
             master=self.cvs_blocks, background='white')
-        self.scb_hor = tk.Scrollbar(master=self.frm_bcRep, orient='horizontal',
+        self.scb_hor = tk.Scrollbar(master=masterFrame, orient='horizontal',
                                     command=self.cvs_blocks.xview)
         self.cvs_blocks.configure(xscrollcommand=self.scb_hor.set)
 
@@ -530,7 +615,8 @@ class tgbGUI:
                              c=self.cvs_blocks: self._setScrollRegion(c))
 
         self._createBlocks(self.frm_blocks, test=False)
-        self.frm_bcRep.pack(padx=10, pady=10, expand=True, fill='x')
+
+        masterFrame.pack(padx=10, pady=10, expand=True, fill='x')
 
     # Master frame
 
@@ -559,6 +645,13 @@ if __name__ == '__main__':
     # For testing the GUI
     testNodes = ['1.1.1.1', 'Sigurd', 'Lars']
     testBC = Blockchain(nodeList=testNodes)
+
+    testBlock = Blockchain.Block(
+        datetime.datetime.now(),
+        Blockchain.Block.Body.Transaction(
+            datetime.datetime.now().timestamp(), 'HEJSA'), '0')
+
+    testBC.addBlock(testBlock)
 
     root = tk.Tk()
     tester = tgbGUI(root=root, blockchainRef=testBC)

@@ -2,6 +2,7 @@ import datetime
 from typing import List, NamedTuple
 import hashlib
 import jsonpickle
+import numpy as np
 
 
 # Dataclass for the blockchain
@@ -74,13 +75,15 @@ class Blockchain:
                 hash of the previous block in the blockchain
 
             '''
-            self.body = self.Body(transactions=transactions)
+            self.body = self.Body(transactions=[transactions])
             self.header = self.Header(
                 version='0.1',
                 bodySize=len(jsonpickle.encode(self.body)),
                 timestampEpoch=timestamp.timestamp(),
                 merkleroot=self._calcMerkleRoot(transactions),
                 preHash=previousHash,
+                difficulty=10000,
+                nonce=0,
             )
 
         class Body(NamedTuple):
@@ -130,6 +133,8 @@ class Blockchain:
             merkleroot: str
             version: str
             preHash: str
+            difficulty: np.longlong
+            nonce: int
 
             def calcHash(self):
                 '''
