@@ -1,8 +1,6 @@
 from copy import copy
-from ctypes import alignment
 import datetime
 import hashlib
-from os import name
 import tkinter as tk
 
 import re as re
@@ -64,14 +62,15 @@ class tgbGUI:
         self.newTransactionWindow.configure(background='white')
 
         tk.Label(master=self.newTransactionWindow,
-                 text='Transactional data:').pack(side='left')
-        ent_data = tk.Entry(master=self.newTransactionWindow)
-        ent_data.pack(side='left')
+                 text='Transactional data:', background='white').pack(padx=5, pady=5)
+        ent_data = tk.Entry(
+            master=self.newTransactionWindow, width=100)
+        ent_data.pack(padx=5, pady=5)
 
         tk.Button(
             master=self.newTransactionWindow,
             text='Broadcast transaction',
-            command=lambda t=ent_data: self._addNewBlock(transactionEnt=t)).pack(side='left')
+            command=lambda t=ent_data: self._addNewBlock(transactionEnt=t)).pack(padx=5, pady=15)
 
     def _addNewBlock(self, transactionEnt):
         transData = transactionEnt.get()
@@ -707,7 +706,7 @@ class tgbGUI:
 
 if __name__ == '__main__':
     # For testing the GUI
-    testNodes = ['1.1.1.1', 'Sigurd', 'Lars']
+    testNodes = ['1.1.1.1', '2.2.2.2', '3.3.3.3']
     testBC = Blockchain(nodeList=testNodes)
 
     testBlock = Blockchain.Block(
