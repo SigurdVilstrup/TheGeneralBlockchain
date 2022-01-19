@@ -1,22 +1,30 @@
+from base64 import decode
+import binascii
 from copy import copy
 import datetime
 import hashlib
+from pydoc import text
+from telnetlib import IP
 import tkinter as tk
 
 import re as re
+from turtle import width
 
 import jsonpickle
 
 from LocalBlockchain import Blockchain
+
+from secp256k1Crypto import PrivateKey, PublicKey, ECDSA
 
 
 class tgbGUI:
     def __init__(self, root, blockchainRef: Blockchain):
         self.blockchain = blockchainRef
         self.blocks = blockchainRef.blocks
-        self.nodeList = [('localhost', 'local node')]
+        self.nodeList = [Blockchain.tgbNode('Example', 'localhost'), ]
+
         for node in blockchainRef.nodeList:
-            self.nodeList.append((node, 'Unnamed'))
+            self.nodeList.append(node)
 
         self.root = root
         self.root.iconphoto(False, tk.PhotoImage(
@@ -56,30 +64,75 @@ class tgbGUI:
 
     def _openNewTransactionsWindow(self):
         self.newTransactionWindow = tk.Toplevel(self.root)
-        self.newTransactionWindow.title('Add new node')
+        self.newTransactionWindow.title('Broadcast new transaction')
         self.newTransactionWindow.iconphoto(False, tk.PhotoImage(
             file='Graphics/icon.drawio.png'))
         self.newTransactionWindow.configure(background='white')
 
+        tk.Label(master=self.newTransactionWindow, text='Batch no.: ',
+                 background='white').grid(padx=5, pady=5, column=0, row=0)
+
+        productList = ['Milk#8751', 'Milk#5214', 'Cheese#6701', 'Cheese#6011']
+
+        option_var_product = tk.StringVar()
+        option_var_product.set(productList[0])
+
+        tk.OptionMenu(self.newTransactionWindow,
+                      option_var_product,
+                      *productList).grid(padx=5, pady=5, column=1, row=0)
+
+        tk.Label(master=self.newTransactionWindow, text='Transaction author: ',
+                 background='white').grid(padx=5, pady=5, column=0, row=1)
+
+        authorList = []
+
+        for node in self.nodeList:
+            authorList.append(node.name)
+
+        option_var = tk.StringVar()
+        option_var.set(authorList[0])
+
+        tk.OptionMenu(self.newTransactionWindow,
+                      option_var,
+                      *authorList).grid(padx=5, pady=5, column=1, row=1)
+
         tk.Label(master=self.newTransactionWindow,
-                 text='Transactional data:', background='white').pack(padx=5, pady=5)
+                 text='Transactional data:', background='white').grid(padx=5, pady=5, column=0, row=2)
         ent_data = tk.Entry(
             master=self.newTransactionWindow, width=100)
-        ent_data.pack(padx=5, pady=5)
+        ent_data.grid(padx=5, pady=5, column=1, row=2)
 
         tk.Button(
             master=self.newTransactionWindow,
             text='Broadcast transaction',
-            command=lambda t=ent_data: self._addNewBlock(transactionEnt=t)).pack(padx=5, pady=15)
+            command=lambda t=ent_data, a=option_var, p=option_var_product: self._addNewBlock(transactionEnt=t, author=a, product=p)).grid(padx=5, pady=5, column=1, row=3)
 
-    def _addNewBlock(self, transactionEnt):
+    def _addNewBlock(self, transactionEnt, author, product):
         transData = transactionEnt.get()
+        authorName = author.get()
+        productID = product.get()
+
+        print(authorName)
+
+        authorNode = None
+
+        for node in self.nodeList:
+            if authorName == node.name:
+                authorNode = node
+
+        signature = authorNode.private_key.ecdsa_sign(
+            transData.encode('utf-8'))
 
         transaction = Blockchain.Block.Body.Transaction(
-            datetime.datetime.now().timestamp(),
-            transData)
+            epochTimestamp=datetime.datetime.now().timestamp(),
+            data=transData,
+            author=authorNode.name,
+            signature=binascii.hexlify(
+                node.private_key.ecdsa_serialize(signature)).decode('utf-8'),
+            productID=productID)
 
-        previousHash = self.blocks[-1].header.calcHash() if self.blocks[-1] else '0'
+        previousHash = self.blocks[-1].header.calcHash() if (
+            len(self.blocks) != 0) else '0'
 
         self.blocks.append(Blockchain.Block(
             datetime.datetime.now(),
@@ -124,13 +177,13 @@ class tgbGUI:
         frm_newNode.pack()
 
     def _addNewNode(self, ip, name):
-        self.nodeList.append((ip.get(), name.get()))
+        self.nodeList.append(Blockchain.tgbNode(
+            name=name.get(), ip=name.get()))
 
         self._forceUpdateNodes(destroyWindow=self.newNodeWindow)
 
     def _nameNode(self, nodeIndex, newNameEnt):
-        self.nodeList[nodeIndex] = (
-            self.nodeList[nodeIndex][0], newNameEnt.get())
+        self.nodeList[nodeIndex].name = newNameEnt.get()
 
         self._forceUpdateNodes(destroyWindow=self.nodeWindow)
         # Update the main Node rep screen
@@ -162,39 +215,57 @@ class tgbGUI:
 
         tk.Label(
             master=frm_info,
-            text="ip:\t",
+            text="Ip address:\t",
             anchor='w',
             background='white').grid(column=0, row=0, sticky='w', padx=5, pady=5)
         lbl_ip = tk.Label(
             master=frm_info,
-            text=self.nodeList[index][0],
+            text=self.nodeList[index].ip,
             justify='left',
             anchor='w',
             background='white').grid(column=1, row=0, sticky='w', padx=5, pady=5)
         tk.Label(
             master=frm_info,
-            text="name:\t",
+            text="Name:\t",
             anchor='w',
-            background='white').grid(column=0, row=1, padx=5, pady=5)
+            background='white').grid(column=0, row=1, sticky='w', padx=5, pady=5)
         lbl_name = tk.Label(
             master=frm_info,
-            text=self.nodeList[index][1],
+            text=self.nodeList[index].name,
             justify='left',
             anchor='w',
-            background='white').grid(column=1, row=1, padx=5, pady=5)
+            background='white').grid(column=1, row=1, sticky='w', padx=5, pady=5)
+        tk.Label(
+            master=frm_info,
+            text="Private key:\t",
+            anchor='w',
+            background='white').grid(column=0, row=2, padx=5, pady=5)
+        lbl_name = tk.Label(
+            master=frm_info,
+            text=self.nodeList[index].show_private(),
+            justify='left',
+            anchor='w',
+            background='white').grid(column=1, row=2, sticky='w', padx=5, pady=5)
+        tk.Label(
+            master=frm_info,
+            text="Public key:\t",
+            anchor='w',
+            background='white').grid(column=0, row=3, sticky='w', padx=5, pady=5)
+        lbl_name = tk.Label(
+            master=frm_info,
+            text=self.nodeList[index].show_public(),
+            justify='left',
+            anchor='w',
+            background='white').grid(column=1, row=3, sticky='w', padx=5, pady=5)
+
         ent_name = tk.Entry(master=frm_info)
         ent_name.grid(column=2, row=1, padx=5, pady=5)
         btn_save = tk.Button(
             master=frm_info,
             text='Save new name',
-            command=lambda i=index, n=ent_name: self._nameNode(i, n)).grid(column=3, row=1, padx=5, pady=5)
+            command=lambda i=index, n=ent_name: self._nameNode(i, n)).grid(column=4, row=1, padx=5, pady=5)
 
         frm_info.columnconfigure(5, weight=2)
-
-        tk.Button(
-            master=frm_info,
-            text='OK / CLOSE',
-            command=lambda: self.nodeWindow.destroy()).grid(column=5, row=0, pady=10, padx=10, sticky='e')
 
         frm_info.pack(pady=10, padx=10, expand=True, fill='x')
 
@@ -280,13 +351,13 @@ class tgbGUI:
             master=frm_list,
             height=15,
             yscrollcommand=scb_vert.set,
-            width=100)
+            width=250)
 
         for transaction in self.blocks[index].body.transactions:
             timestamp = datetime.datetime.fromtimestamp(
                 transaction.epochTimestamp).strftime('%d-%m-%Y/%H:%M:%S')
-            lsb_trans.insert('end', '%s    :    %s' %
-                             (timestamp, transaction.data))
+            lsb_trans.insert('end', 'ID: %s, Author: %s, Signed: ["%s"] @%s : With data: %s' %
+                             (transaction.productID, transaction.author, transaction.signature, timestamp, transaction.data))
 
         lsb_trans.pack(fill='both', padx=3, pady=3, side='bottom')
         scb_vert.config(command=lsb_trans.yview)
@@ -520,8 +591,8 @@ class tgbGUI:
                 canvas=canvas,
                 index=index,
                 buildpos=index,
-                name=node[1],
-                hostaddress=node[0],
+                name=node.name,
+                hostaddress=node.ip,
                 height=ratioh,
                 width=ratioh*0.75,
                 global_center=center,
@@ -706,15 +777,13 @@ class tgbGUI:
 
 if __name__ == '__main__':
     # For testing the GUI
-    testNodes = ['1.1.1.1', '2.2.2.2', '3.3.3.3']
+    testNodes = [Blockchain.tgbNode('Dairy', '1.1.1.1'),
+                 Blockchain.tgbNode('Logistics', '2.2.2.2'),
+                 Blockchain.tgbNode('Treatment', '3.3.3.3'),
+                 Blockchain.tgbNode('Distribution', '4.4.4.4')]
     testBC = Blockchain(nodeList=testNodes)
 
-    testBlock = Blockchain.Block(
-        datetime.datetime.now(),
-        Blockchain.Block.Body.Transaction(
-            datetime.datetime.now().timestamp(), 'HEJSA'), '0')
-
-    testBC.addBlock(testBlock)
+    # testBC.addBlock(testBlock)
 
     root = tk.Tk()
     tester = tgbGUI(root=root, blockchainRef=testBC)

@@ -54,7 +54,7 @@ class Network:
             target=rxServer, args=[self.blockchain, self.port])
         self.rxThread.start()
 
-    def addNode(self):
+    def getNodes(self):
         '''Request all nodes from all nodes in nodeList'''
         # Create txServer
         tx = txServer(

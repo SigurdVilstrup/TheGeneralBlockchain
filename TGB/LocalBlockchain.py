@@ -1,8 +1,10 @@
+import binascii
 import datetime
 from typing import List, NamedTuple
 import hashlib
 import jsonpickle
 import numpy as np
+from secp256k1Crypto import PrivateKey, PublicKey, ECDSA
 
 
 # Dataclass for the blockchain
@@ -47,6 +49,27 @@ class Blockchain:
     def getNodeList(self):
         return self.nodeList
 
+    class tgbNode:
+        def __init__(self, name, ip):
+            self.private_key = PrivateKey(None)
+            self.name = name
+            self.ip = ip
+
+            self.public_key = self.private_key.pubkey
+
+        def signTransaction(self, message):
+            signature = self.private_key.ecdsa_sign(message)
+            return signature
+
+        def show_private(self):
+            raw = self.private_key.private_key
+            return binascii.hexlify(raw).decode('utf-8')
+            pass
+
+        def show_public(self):
+            rawp = self.public_key.serialize()
+            return binascii.hexlify(rawp).decode('utf-8')
+
     class Block:
         '''
         A class that represents a single block in a blockchain.
@@ -80,7 +103,7 @@ class Blockchain:
                 version='0.1',
                 bodySize=len(jsonpickle.encode(self.body)),
                 timestampEpoch=timestamp.timestamp(),
-                merkleroot=self._calcMerkleRoot(transactions),
+                merkleroot=self._calcMerkleRoot([transactions]),
                 preHash=previousHash,
                 difficulty=10000,
                 nonce=0,
@@ -110,6 +133,9 @@ class Blockchain:
                 '''
                 epochTimestamp: int
                 data: str
+                signature: str
+                author: str
+                productID: str
 
         class Header(NamedTuple):
             '''
@@ -161,6 +187,8 @@ class Blockchain:
             for t in transactions:
                 allHashes.append(hashlib.sha256(
                     jsonpickle.encode(t).encode('utf-8')).hexdigest())
+
+            print(allHashes)
 
             # Always even number of hashes total
             if (len(allHashes) % 2 != 0):
